@@ -35,6 +35,8 @@ client_t client_init(char *server) {
 		goto error;
 	}
 
+	client->mode = "netascii";
+
 	return client;
 
 error:

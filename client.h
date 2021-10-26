@@ -8,6 +8,8 @@
 typedef struct TFTPClient {
 	int sock;
 	struct addrinfo *serv_addr;
+	char *mode;
+	struct sockaddr_storage tid_addr;
 } *client_t;
 
 void client_free(client_t *client);
