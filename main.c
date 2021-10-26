@@ -11,12 +11,27 @@ typedef struct TFTPClient {
 	struct addrinfo *serv_addr;
 } *client_t;
 
+void client_free(client_t *client) {
+	if (client == NULL || *client == NULL) {
+		return;
+	}
+
+	close((*client)->sock);
+	freeaddrinfo((*client)->serv_addr);
+
+	free(*client);
+	*client = NULL;
+}
+
 client_t client_init(char *server) {
 	struct addrinfo hints = {0};
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 
 	client_t client = calloc(1, sizeof(struct TFTPClient));
+	if (client == NULL) {
+		return NULL;
+	}
 
 	if (getaddrinfo(server, TFTP_PORT, &hints, &client->serv_addr)) {
 		goto error;
@@ -30,20 +45,8 @@ client_t client_init(char *server) {
 	return client;
 
 error:
-	freeaddrinfo(client->serv_addr);
+	client_free(&client);
 	return NULL;
-}
-
-void client_free(client_t *client) {
-	if (client == NULL || *client == NULL) {
-		return;
-	}
-
-	close((*client)->sock);
-	freeaddrinfo((*client)->serv_addr);
-
-	free(*client);
-	*client = NULL;
 }
 
 int main() {
