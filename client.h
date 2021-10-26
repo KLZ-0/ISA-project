@@ -1,6 +1,8 @@
 #ifndef MYTFTPCLIENT_CLIENT_H
 #define MYTFTPCLIENT_CLIENT_H
 
+#include <netdb.h>
+
 #define TFTP_PORT "69"
 
 typedef struct TFTPClient {
