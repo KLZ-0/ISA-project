@@ -35,7 +35,7 @@ int client_read(client_t client, char *filename) {
 	if (recvd == -1) {
 		return EXIT_FAILURE;
 	}
-	printf("received %lu bytes from the server\n", sent);
+	printf("received %lu bytes from the server\n", recvd);
 
 	// process received packet
 	if (*(buffer + 1) != 3) {
