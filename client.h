@@ -5,14 +5,17 @@
 
 #define TFTP_PORT "69"
 
+/**
+ * TFTPv2 client structure
+ */
 typedef struct TFTPClient {
-	int sock;
-	struct addrinfo *serv_addr;
-	char *mode;
-	struct sockaddr_storage tid_addr;
-} *client_t;
+	int sock;                         ///< Connection socket
+	struct addrinfo *serv_addr;       ///< Server address with the inital TID port (69 by default)
+	char *mode;                       ///< transmission mode ("netascii" or "octet")
+	struct sockaddr_storage tid_addr; ///< Server address with the server's chosen TID port (acquired after first received packet)
+} * client_t;
 
 void client_free(client_t *client);
 client_t client_init(char *server);
 
-#endif//MYTFTPCLIENT_CLIENT_H
+#endif //MYTFTPCLIENT_CLIENT_H
