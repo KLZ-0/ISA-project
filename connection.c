@@ -82,6 +82,11 @@ int conn_recv(client_t client) {
 	assert(client != NULL);
 
 	char buffer[BUFF_SIZE] = {0};
+	FILE *target_file = fopen(client->filename, "wb");
+	if (target_file == NULL) {
+		perror("FILE OPEN ERROR");
+		return EXIT_FAILURE;
+	}
 
 	ssize_t recvd;
 	do {
@@ -100,14 +105,19 @@ int conn_recv(client_t client) {
 			return EXIT_FAILURE;
 		}
 
-		uint16_t block_number = *(buffer + 3) + (*(buffer + 2) << 8);
-		printf("DATA (block %d): %s\n", block_number, buffer + 4);
-
 		// send ack packet
 		if (conn_recv_ack(client, buffer + 2) != EXIT_SUCCESS) {
 			return EXIT_FAILURE;
 		}
+
+		// write the data to the target file
+		fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
+		if (ferror(target_file)) {
+			perror("FILE WRITE ERROR");
+			return EXIT_FAILURE;
+		}
 	} while (recvd - 4 == BLOCK_SIZE);
 
+	fclose(target_file);
 	return EXIT_SUCCESS;
 }
