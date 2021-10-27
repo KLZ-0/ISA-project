@@ -50,7 +50,7 @@ client_t client_init(char *server) {
 	}
 
 	client->mode = "netascii";
-	client->filename = "cr";
+	client->filename = "maskoff_tone.wav";
 	client->filename_len = strlen(client->filename);
 
 	return client;
