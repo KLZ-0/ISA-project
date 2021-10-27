@@ -119,8 +119,7 @@ int conn_recv(client_t client) {
 				return EXIT_FAILURE;
 			}
 		} else if (client->mode[0] == 'n') { // netascii
-			netascii_to_unix(buffer + 4, recvd - 4);
-			size_t unix_len = strlen(buffer + 4);
+			size_t unix_len = netascii_to_unix(buffer + 4, recvd - 4);
 			fwrite(buffer + 4, sizeof(char), unix_len, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
