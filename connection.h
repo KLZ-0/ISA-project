@@ -3,7 +3,6 @@
 
 #include "client.h"
 
-#define BUFF_SIZE 1024
 #define ACK_MSG_SIZE 4
 
 // TODO: make variable
