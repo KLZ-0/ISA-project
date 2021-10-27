@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -49,6 +50,8 @@ client_t client_init(char *server) {
 	}
 
 	client->mode = "octet";
+	client->filename = "1024";
+	client->filename_len = strlen(client->filename);
 
 	return client;
 

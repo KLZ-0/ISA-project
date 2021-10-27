@@ -7,8 +7,8 @@
 #include "connection.h"
 
 
-int client_read(client_t client, char *filename) {
-	if (conn_send_init(client, filename, OP_RRQ) != EXIT_SUCCESS) {
+int client_read(client_t client) {
+	if (conn_send_init(client, OP_RRQ) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
@@ -27,7 +27,7 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
-	if (client_read(client, "1024") != EXIT_SUCCESS) {
+	if (client_read(client) != EXIT_SUCCESS) {
 		client_free(&client);
 		return EXIT_FAILURE;
 	}

@@ -22,6 +22,8 @@ typedef struct TFTPClient {
 	struct addrinfo *serv_addr;       ///< Server address with the inital TID port (69 by default)
 	char *mode;                       ///< transmission mode ("netascii" or "octet")
 	struct sockaddr_storage tid_addr; ///< Server address with the server's chosen TID port (acquired after first received packet)
+	char *filename;
+	size_t filename_len;
 } * client_t;
 
 void client_free(client_t *client);
