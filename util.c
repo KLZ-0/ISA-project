@@ -42,37 +42,6 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	return newsize;
 }
 
-size_t unix_to_netascii(char *data, size_t data_size) {
-	// \n -> \r\n
-	// \r -> \r\0
-	char buffer[BUFF_SIZE] = {0};
-
-	size_t newsize = 0;
-
-	char *d_ptr = buffer;
-	for (int i = 0; i < data_size; i++) {
-		switch (data[i]) {
-			case '\n':
-				*d_ptr++ = '\r';
-				*d_ptr++ = '\n';
-				newsize += 2;
-				break;
-			case '\r':
-				*d_ptr++ = '\r';
-				*d_ptr++ = '\0';
-				newsize += 2;
-				break;
-			default:
-				*d_ptr = data[i];
-				newsize++;
-				break;
-		}
-	}
-
-	memcpy(data, buffer, newsize + 1);
-	return newsize;
-}
-
 size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
 	static char lastchar = 0;
 
