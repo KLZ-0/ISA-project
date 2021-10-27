@@ -5,6 +5,9 @@
 
 #define TFTP_PORT "69"
 
+// TODO: make variable
+#define BLOCK_SIZE 512
+
 typedef enum Opcode
 {
 	OP_RRQ = 1,
@@ -24,6 +27,7 @@ typedef struct TFTPClient {
 	struct sockaddr_storage tid_addr; ///< Server address with the server's chosen TID port (acquired after first received packet)
 	char *filename;
 	size_t filename_len;
+	size_t block_size;
 } * client_t;
 
 void client_free(client_t *client);
