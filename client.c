@@ -49,8 +49,8 @@ client_t client_init(char *server) {
 		goto error;
 	}
 
-	client->mode = "octet";
-	client->filename = "1024";
+	client->mode = "netascii";
+	client->filename = "cr";
 	client->filename_len = strlen(client->filename);
 
 	return client;

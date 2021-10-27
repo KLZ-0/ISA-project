@@ -1,4 +1,5 @@
 #include "connection.h"
+#include "util.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,10 +112,20 @@ int conn_recv(client_t client) {
 		}
 
 		// write the data to the target file
-		fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
-		if (ferror(target_file)) {
-			perror("FILE WRITE ERROR");
-			return EXIT_FAILURE;
+		if (client->mode[0] == 'o') { // binary
+			fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
+			if (ferror(target_file)) {
+				perror("FILE WRITE ERROR");
+				return EXIT_FAILURE;
+			}
+		} else if (client->mode[0] == 'n') { // netascii
+			netascii_to_unix(buffer + 4, recvd - 4);
+			size_t unix_len = strlen(buffer + 4);
+			fwrite(buffer + 4, sizeof(char), unix_len, target_file);
+			if (ferror(target_file)) {
+				perror("FILE WRITE ERROR");
+				return EXIT_FAILURE;
+			}
 		}
 	} while (recvd - 4 == BLOCK_SIZE);
 
