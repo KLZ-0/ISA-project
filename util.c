@@ -41,3 +41,82 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	lastchar = tmplastchar;
 	return newsize;
 }
+
+size_t unix_to_netascii(char *data, size_t data_size) {
+	// \n -> \r\n
+	// \r -> \r\0
+	char buffer[BUFF_SIZE] = {0};
+
+	size_t newsize = 0;
+
+	char *d_ptr = buffer;
+	for (int i = 0; i < data_size; i++) {
+		switch (data[i]) {
+			case '\n':
+				*d_ptr++ = '\r';
+				*d_ptr++ = '\n';
+				newsize += 2;
+				break;
+			case '\r':
+				*d_ptr++ = '\r';
+				*d_ptr++ = '\0';
+				newsize += 2;
+				break;
+			default:
+				*d_ptr = data[i];
+				newsize++;
+				break;
+		}
+	}
+
+	memcpy(data, buffer, newsize + 1);
+	return newsize;
+}
+
+size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
+	static char lastchar = 0;
+
+	int c;
+	for (int i = 0; i < block_size; ++i) {
+		if (i == 0 && lastchar != 0) {
+			if (lastchar == '\r') {
+				lastchar = '\0';
+			}
+			block[i++] = lastchar;
+			lastchar = 0;
+		}
+
+		if ((c = fgetc(file)) == EOF) {
+			return i;
+		}
+
+		if (ferror(file)) {
+			perror("FILE READ ERROR");
+			return i;
+		}
+
+		block[i] = (char)c;
+
+		if (c == '\n' || c == '\r') {
+			block[i++] = '\r';
+
+			if (i == block_size) {
+				lastchar = (char)c;
+				c = 0; // hack but works
+			}
+		}
+
+		switch (c) {
+			case '\n':
+				block[i] = '\n';
+				break;
+			case '\r':
+				block[i] = '\0';
+				break;
+			default:
+				break;
+		}
+	}
+
+	return block_size;
+}

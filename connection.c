@@ -170,7 +170,12 @@ int conn_send(client_t client) {
 	// send content in blocks
 	size_t block_bytes;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
-		block_bytes = fread(block, sizeof(char), client->block_size, source_file);
+		if (client->mode[0] == 'o') { // binary
+			block_bytes = fread(block, sizeof(char), client->block_size, source_file);
+		} else if (client->mode[0] == 'n') {
+			block_bytes = file_to_netascii(source_file, block, client->block_size);
+		}
+
 		if (ferror(source_file)) {
 			perror("FILE READ ERROR");
 			goto error;
