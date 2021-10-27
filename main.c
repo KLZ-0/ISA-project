@@ -27,7 +27,7 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
-	if (client_read(client, "lorem") != EXIT_SUCCESS) {
+	if (client_read(client, "1024") != EXIT_SUCCESS) {
 		client_free(&client);
 		return EXIT_FAILURE;
 	}

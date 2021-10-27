@@ -48,7 +48,7 @@ client_t client_init(char *server) {
 		goto error;
 	}
 
-	client->mode = "netascii";
+	client->mode = "octet";
 
 	return client;
 

@@ -93,6 +93,7 @@ int conn_recv(client_t client) {
 			perror("CONNECTION RECV ERROR");
 			return EXIT_FAILURE;
 		}
+		buffer[recvd] = 0;
 
 		// process received packet
 		if (*(buffer + 1) != OP_DATA) {
