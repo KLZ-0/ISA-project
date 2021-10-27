@@ -6,17 +6,7 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	// WARNING: Netascii messages can contain zero bytes mid-string ffs
 	// \r\n -> \n
 	// \r\0 -> \r
-	// lastchar is needed to identify if tese happen between UDP messages
-	// 00007690 -> E..N
-	// 09 08 8c 09 61 0b 45 0d  4e 0f 6f 11 d7 13 9e 14
-	// 09 08 8c 09 61 0b 45 0d  00 4e 0f 6f 11 d7 13 9e
-	// 2f fe 53 ff 44 00 01 01 33 01
-	// 2f fe 53 ff 44 01 01 33 01
-	// 0000a200
-	// 0a fa 84 fa 38 fb 23 fc  b7 fc 41 fd 63 fd 3b fd
-	// 0d 0a fa 84 fa 38 fb 23  fc b7 fc 41 fd 63 fd 3b
-
-	// inc /r | /n
+	// lastchar is needed to identify if these happen between UDP messages
 
 	char tmplastchar = 0;
 	static char lastchar = 0;
