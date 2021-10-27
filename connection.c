@@ -89,6 +89,7 @@ int conn_recv(client_t client) {
 		return EXIT_FAILURE;
 	}
 
+	// TODO: resend ACK in case the server sends the same data packet twice
 	ssize_t recvd;
 	do {
 		// receive packet
@@ -129,5 +130,25 @@ int conn_recv(client_t client) {
 	} while (recvd - 4 == BLOCK_SIZE);
 
 	fclose(target_file);
+	return EXIT_SUCCESS;
+}
+
+void conn_send_wait_for_ack(client_t client, uint16_t block_id) {
+	char buffer[BUFF_SIZE] = {0};
+
+	socklen_t addr_size = sizeof(client->tid_addr);
+	size_t recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
+}
+
+int conn_send(client_t client) {
+	conn_send_wait_for_ack(client, 0);
+
+	// send content in blocks
+	char message[] = "\0\3\0\1text\n";
+	socklen_t addr_size = sizeof(client->tid_addr);
+	sendto(client->sock, message, sizeof message, 0, (struct sockaddr *)&client->tid_addr, addr_size);
+
+	conn_send_wait_for_ack(client, 1);
+
 	return EXIT_SUCCESS;
 }

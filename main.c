@@ -8,11 +8,15 @@
 
 
 int client_read(client_t client) {
-	if (conn_send_init(client, OP_RRQ) != EXIT_SUCCESS) {
+	if (conn_send_init(client, OP_WRQ) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
-	if (conn_recv(client) != EXIT_SUCCESS) {
+	//	if (conn_recv(client) != EXIT_SUCCESS) {
+	//		return EXIT_FAILURE;
+	//	}
+
+	if (conn_send(client) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
