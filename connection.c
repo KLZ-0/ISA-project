@@ -10,9 +10,14 @@
  * @param filename file to get from the server
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-int conn_send_init(client_t client, char *filename) {
+int conn_send_init(client_t client, char *filename, opcode_t opcode) {
 	assert(client != NULL);
 	assert(filename != NULL);
+
+	if (opcode != OP_RRQ && opcode != OP_WRQ) {
+		fprintf(stderr, "CONNECTION INIT ERROR: Invalid opcode %d, should be RRQ/WRQ\n", opcode);
+		return EXIT_FAILURE;
+	}
 
 	// calculate message length and allocate it
 	size_t msg_size = strlen(filename) + strlen(client->mode) + 4;
@@ -21,7 +26,7 @@ int conn_send_init(client_t client, char *filename) {
 	// compose the message
 	char *msg_ptr = message;
 	*msg_ptr++ = 0;
-	*msg_ptr++ = 1;
+	*msg_ptr++ = opcode;
 
 	strcpy(msg_ptr, filename);
 	msg_ptr += strlen(filename) + 1;
@@ -54,7 +59,7 @@ int conn_recv_ack(client_t client, const char *block) {
 	char ack_msg[ACK_MSG_SIZE];
 
 	ack_msg[0] = 0;
-	ack_msg[1] = 4;
+	ack_msg[1] = OP_ACK;
 	ack_msg[2] = block[0];
 	ack_msg[3] = block[1];
 
@@ -88,7 +93,7 @@ int conn_recv(client_t client) {
 	}
 
 	// process received packet
-	if (*(buffer + 1) != 3) {
+	if (*(buffer + 1) != OP_DATA) {
 		// TODO: not a data packet
 		return EXIT_FAILURE;
 	}

@@ -8,7 +8,7 @@
 
 
 int client_read(client_t client, char *filename) {
-	if (conn_send_init(client, filename) != EXIT_SUCCESS) {
+	if (conn_send_init(client, filename, OP_RRQ) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 

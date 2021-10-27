@@ -5,6 +5,15 @@
 
 #define TFTP_PORT "69"
 
+typedef enum Opcode
+{
+	OP_RRQ = 1,
+	OP_WRQ = 2,
+	OP_DATA = 3,
+	OP_ACK = 4,
+	OP_ERROR = 5,
+} opcode_t;
+
 /**
  * TFTPv2 client structure
  */
