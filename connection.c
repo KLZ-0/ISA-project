@@ -84,27 +84,30 @@ int conn_recv(client_t client) {
 
 	char buffer[BUFF_SIZE] = {0};
 
-	// receive packet
-	socklen_t addr_size = sizeof(client->tid_addr);
-	ssize_t recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
-	if (recvd == -1) {
-		perror("CONNECTION RECV ERROR");
-		return EXIT_FAILURE;
-	}
+	ssize_t recvd;
+	do {
+		// receive packet
+		socklen_t addr_size = sizeof(client->tid_addr);
+		recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
+		if (recvd == -1) {
+			perror("CONNECTION RECV ERROR");
+			return EXIT_FAILURE;
+		}
 
-	// process received packet
-	if (*(buffer + 1) != OP_DATA) {
-		// TODO: not a data packet
-		return EXIT_FAILURE;
-	}
+		// process received packet
+		if (*(buffer + 1) != OP_DATA) {
+			// TODO: not a data packet
+			return EXIT_FAILURE;
+		}
 
-	uint16_t block_number = *(buffer + 3) + (*(buffer + 2) << 8);
-	printf("DATA (block %d): %s\n", block_number, buffer + 4);
+		uint16_t block_number = *(buffer + 3) + (*(buffer + 2) << 8);
+		printf("DATA (block %d): %s\n", block_number, buffer + 4);
 
-	// send ack packet
-	if (conn_recv_ack(client, buffer + 2) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
+		// send ack packet
+		if (conn_recv_ack(client, buffer + 2) != EXIT_SUCCESS) {
+			return EXIT_FAILURE;
+		}
+	} while (recvd - 4 == BLOCK_SIZE);
 
 	return EXIT_SUCCESS;
 }
