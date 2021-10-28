@@ -59,6 +59,20 @@ int client_conn_init(client_t client) {
 		return EXIT_FAILURE;
 	}
 
+	struct timeval timeout;
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+
+	if (setsockopt(client->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
+		perror("CLIENT INIT SOCKOPT ERROR");
+		return EXIT_FAILURE;
+	}
+
+	if (setsockopt(client->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout) < 0) {
+		perror("CLIENT INIT SOCKOPT ERROR");
+		return EXIT_FAILURE;
+	}
+
 	return EXIT_SUCCESS;
 }
 
