@@ -89,3 +89,39 @@ size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
 
 	return block_size;
 }
+
+/**
+ * Make argc & argv from a given input string
+ * @param input zero terminated input string
+ * @param argv list of char* to store beginnings of words
+ * @param max_argc maximum number of args
+ * @return argc
+ */
+int make_argv(char *input, char *argv[], size_t max_argc) {
+	// first word
+	char *sp_ptr = input;
+	argv[0] = input;
+
+	// rest of the input
+	int argc = 1;
+	while ((sp_ptr = strchr(sp_ptr, ' ')) != NULL) {
+		// replace space with zero byte
+		*sp_ptr++ = '\0';
+
+		// skip multiple spaces
+		if (*sp_ptr == ' ') {
+			continue;
+		}
+
+		// store word pointer, return in case the next would exceed memory size
+		argv[argc++] = sp_ptr;
+		if (argc == max_argc) {
+			return argc;
+		}
+	}
+
+	// remove trailing newline
+	argv[argc - 1][strlen(argv[argc - 1]) - 1] = '\0';
+
+	return argc;
+}
