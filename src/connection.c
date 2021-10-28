@@ -82,7 +82,14 @@ int conn_recv_send_ack(client_t client, const char *block) {
 int conn_recv(client_t client) {
 	assert(client != NULL);
 
-	char buffer[BUFF_SIZE] = {0};
+	// Two buffers which we will alternate to check whether the received message is not the same as before
+	// which may happen in case the ACK packet is not received by the server
+	// Alternating pointer -> because then we don't need to copy the data after each received packet, we simply change the pointer
+	char buf1[BUFF_SIZE] = {0};
+	char buf2[BUFF_SIZE] = {0};
+	char *buffer = buf1;
+	char *buffer_alt = buf2;
+
 	FILE *target_file = NULL;
 
 	// TODO: resend ACK in case the server sends the same data packet twice
@@ -104,6 +111,11 @@ int conn_recv(client_t client) {
 		} else if (*(buffer + 1) != OP_DATA) {
 			perr(TAG_CONN, "Packet with invalid opcode received");
 			goto error;
+		}
+
+		// test if the content is the same as the last received packet, including block number
+		if (memcmp(buffer, buffer_alt, recvd) == 0) {
+			goto resend_ack;
 		}
 
 		// open the file for writing if it is not open yet
@@ -131,10 +143,16 @@ int conn_recv(client_t client) {
 			}
 		}
 
+	resend_ack:
 		// send ack packet
 		if (conn_recv_send_ack(client, buffer + 2) != EXIT_SUCCESS) {
 			goto error;
 		}
+
+		// swap buffers
+		char *tmp = buffer;
+		buffer = buffer_alt;
+		buffer_alt = tmp;
 	} while (recvd - 4 == client->opts->block_size); // TODO: Use negotiated block size
 
 	fclose(target_file);
