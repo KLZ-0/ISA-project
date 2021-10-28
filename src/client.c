@@ -71,7 +71,7 @@ void client_conn_close(client_t client) {
 }
 
 int client_run(client_t client) {
-	if (conn_send_init(client) != EXIT_SUCCESS) {
+	if (conn_init(client) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 

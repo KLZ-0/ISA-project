@@ -11,7 +11,7 @@
  * @param filename file to get from the server
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-int conn_send_init(client_t client) {
+int conn_init(client_t client) {
 	assert(client != NULL);
 
 	if (client->opts->operation != OP_RRQ && client->opts->operation != OP_WRQ) {
@@ -51,7 +51,7 @@ int conn_send_init(client_t client) {
  * @param block block number to acknowledge (2 byte word, big endian)
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-int conn_recv_ack(client_t client, const char *block) {
+int conn_recv_send_ack(client_t client, const char *block) {
 	assert(client != NULL);
 	assert(block != NULL);
 
@@ -132,7 +132,7 @@ int conn_recv(client_t client) {
 		}
 
 		// send ack packet
-		if (conn_recv_ack(client, buffer + 2) != EXIT_SUCCESS) {
+		if (conn_recv_send_ack(client, buffer + 2) != EXIT_SUCCESS) {
 			goto error;
 		}
 	} while (recvd - 4 == client->opts->block_size); // TODO: Use negotiated block size
