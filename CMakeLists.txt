@@ -3,4 +3,4 @@ project(mytftpclient)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(mytftpclient main.c client.c connection.c util.c)
+add_executable(mytftpclient src/main.c src/client.c src/connection.c src/util.c)
