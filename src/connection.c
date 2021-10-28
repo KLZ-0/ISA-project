@@ -147,11 +147,26 @@ error:
 	return EXIT_FAILURE;
 }
 
-void conn_send_wait_for_ack(client_t client, uint16_t block_id) {
+int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 	char buffer[BUFF_SIZE] = {0};
 
 	socklen_t addr_size = sizeof(client->tid_addr);
 	size_t recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
+
+	if (recvd == -1) {
+		perror("CONNECTION RECV ERROR");
+		return EXIT_FAILURE;
+	}
+
+	if (*(buffer + 1) == OP_ERROR) {
+		perr(TAG_ERROR_PACKET, buffer + 4);
+		return EXIT_FAILURE;
+	} else if (*(buffer + 1) != OP_ACK) {
+		perr(TAG_CONN, "Packet with invalid opcode received");
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
 
 int conn_send_block(client_t client, char *block, size_t block_size, size_t block_id) {
@@ -172,7 +187,9 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 }
 
 int conn_send(client_t client) {
-	conn_send_wait_for_ack(client, 0);
+	if (conn_send_wait_for_ack(client, 0) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
 	char *block = calloc(client->opts->block_size, sizeof(char)); // TODO: Use negotiated block size
 
 	FILE *source_file = fopen(client->opts->filename, "rb");
@@ -194,8 +211,11 @@ int conn_send(client_t client) {
 			perror("FILE READ ERROR");
 			goto error;
 		}
+
 		conn_send_block(client, block, block_bytes, block_id);
-		conn_send_wait_for_ack(client, block_id);
+		if (conn_send_wait_for_ack(client, block_id) != EXIT_SUCCESS) {
+			goto error;
+		}
 	}
 
 	fclose(source_file);
