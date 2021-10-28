@@ -92,7 +92,6 @@ int conn_recv(client_t client) {
 
 	FILE *target_file = NULL;
 
-	// TODO: resend ACK in case the server sends the same data packet twice
 	ssize_t recvd;
 	do {
 		// receive packet
