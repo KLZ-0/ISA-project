@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 /**
  * Convert optarg to unsigned long and store it in target
@@ -111,6 +112,15 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 	if (opts->filename == NULL || opts->filename_len == 0) {
 		perr(TAG_ARGSPARSE, "A valid file name is required");
 		return EXIT_FAILURE;
+	}
+
+	// test if the file to be sent exists
+	if (opts->operation == OP_WRQ) {
+		struct stat buffer;
+		if (stat(opts->filename, &buffer) == -1) {
+			perr(TAG_ARGSPARSE, "Can't send a non-existent file");
+			return EXIT_FAILURE;
+		}
 	}
 
 	// TODO: limit block_size by the lowest MTU of all the interfaces
