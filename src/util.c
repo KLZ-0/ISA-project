@@ -98,12 +98,25 @@ size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
  * @return argc
  */
 int make_argv(char *input, char *argv[], size_t max_argc) {
+	if (input == NULL || argv == NULL) {
+		return ARGC_ERROR;
+	}
+
+	// clear argv
+	memset(argv, 0, max_argc);
+
+	// program name - we should emulate the real argv
+	argv[0] = PROG_NAME;
+	int argc = 1;
+	if (input[0] == '\n') {
+		return argc;
+	}
+
 	// first word
-	char *sp_ptr = input;
-	argv[0] = input;
+	argv[argc++] = input;
 
 	// rest of the input
-	int argc = 1;
+	char *sp_ptr = input;
 	while ((sp_ptr = strchr(sp_ptr, ' ')) != NULL) {
 		// replace space with zero byte
 		*sp_ptr++ = '\0';
@@ -116,7 +129,7 @@ int make_argv(char *input, char *argv[], size_t max_argc) {
 		// store word pointer, return in case the next would exceed memory size
 		argv[argc++] = sp_ptr;
 		if (argc == max_argc) {
-			return argc;
+			return ARGC_ERROR;
 		}
 	}
 

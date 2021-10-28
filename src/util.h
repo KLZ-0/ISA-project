@@ -3,7 +3,9 @@
 
 #include <stdio.h>
 
+#define PROG_NAME "myftpclient"
 #define BUFF_SIZE 1024
+#define ARGC_ERROR -1
 
 size_t netascii_to_unix(char *data, size_t data_size);
 size_t file_to_netascii(FILE *file, char *block, size_t block_size);

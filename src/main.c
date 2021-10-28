@@ -8,22 +8,24 @@
 #define PTR_BUFFER_SIZE 1024
 
 char buffer[BUFSIZ] = {0};
-char *ptr_buffer[PTR_BUFFER_SIZE];
+char *argv[PTR_BUFFER_SIZE];
 
 int main() {
-	while (fgets(buffer, BUFSIZ, stdin)) {
-		int c = make_argv(buffer, ptr_buffer, PTR_BUFFER_SIZE);
+	options_t opts;
 
-		printf("%d\n", c);
-		for (int i = 0; i < c; i++) {
-			printf("%s\n", ptr_buffer[i]);
+	while (fgets(buffer, BUFSIZ, stdin)) {
+		int argc = make_argv(buffer, argv, PTR_BUFFER_SIZE);
+		if (argc == ARGC_ERROR) {
+			fprintf(stderr, "Input error\n");
+			continue;
+		}
+
+		if (parse_options(argc, argv, &opts) != EXIT_SUCCESS) {
+			continue;
 		}
 	}
 
-	//	options_t opts;
-	//	if (parse_options(argc, argv, &opts) != EXIT_SUCCESS) {
-	//		return EXIT_FAILURE;
-	//	}
+
 	//
 	//	client_t client = client_init(&opts);
 	//	if (client == NULL) {

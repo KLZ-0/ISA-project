@@ -45,6 +45,9 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 	opts->raw_addr = "127.0.0.1";
 	opts->raw_port = "69";
 
+	opterr = 0;
+	optind = 1;
+
 	int c;
 	while ((c = getopt(argc, argv, "RWd:t:s:mc:a:")) != -1) {
 		switch (c) {
@@ -101,11 +104,11 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				break;
 			case '?':
 				if (strchr("dtsca", optopt))
-					parser_error("Option -%c requires an argument.\n", optopt);
+					parser_error("Option -%c requires an argument.", optopt);
 				else if (isprint(optopt))
-					parser_error("Unknown option -%c.\n", optopt);
+					parser_error("Unknown option -%c.", optopt);
 				else
-					parser_error("Unknown option character \\x%x.\n", optopt);
+					parser_error("Unknown option character \\x%x.", optopt);
 				return EXIT_FAILURE;
 			default:
 				break;
