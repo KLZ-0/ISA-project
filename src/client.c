@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "client.h"
+#include "connection.h"
 
 /**
  * Free the memory allocated by the TFTPv2 client
@@ -27,7 +28,7 @@ void client_free(client_t *client) {
  * @param server target server to connect
  * @return initialized client_t or NULL on error
  */
-client_t client_init(char *server) {
+client_t client_init(options_t *opts) {
 	struct addrinfo hints = {0};
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -38,7 +39,7 @@ client_t client_init(char *server) {
 		return NULL;
 	}
 
-	if (getaddrinfo(server, TFTP_PORT, &hints, &client->serv_addr)) {
+	if (getaddrinfo(opts->raw_addr, opts->raw_port, &hints, &client->serv_addr)) {
 		perror("CLIENT INIT ADDRESS ERROR");
 		goto error;
 	}
@@ -49,14 +50,23 @@ client_t client_init(char *server) {
 		goto error;
 	}
 
-	client->mode = "netascii";
-	client->filename = "test2";
-	client->filename_len = strlen(client->filename);
-	client->block_size = BLOCK_SIZE;
+	client->opts = opts;
 
 	return client;
 
 error:
 	client_free(&client);
 	return NULL;
+}
+
+int client_run(client_t client) {
+	if (conn_send_init(client) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+
+	if (client->opts->operation == OP_WRQ) {
+		return conn_send(client);
+	} else {
+		return conn_recv(client);
+	}
 }

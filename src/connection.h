@@ -5,7 +5,7 @@
 
 #define ACK_MSG_SIZE 4
 
-int conn_send_init(client_t client, opcode_t opcode);
+int conn_send_init(client_t client);
 int conn_recv(client_t client);
 int conn_send(client_t client);
 

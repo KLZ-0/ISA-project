@@ -1,37 +1,20 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 
 #include "client.h"
-#include "connection.h"
 
-
-int client_read(client_t client) {
-	if (conn_send_init(client, OP_WRQ) != EXIT_SUCCESS) {
+int main(int argc, char *argv[]) {
+	options_t opts;
+	if (parse_options(argc, argv, &opts) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
-	//	if (conn_recv(client) != EXIT_SUCCESS) {
-	//		return EXIT_FAILURE;
-	//	}
-
-	if (conn_send(client) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
-}
-
-int main() {
-//	client_t client = client_init("localhost");
-//	client_t client = client_init("127.0.0.1");
-	client_t client = client_init("::1");
+	client_t client = client_init(&opts);
 	if (client == NULL) {
 		return EXIT_FAILURE;
 	}
 
-	if (client_read(client) != EXIT_SUCCESS) {
+	if (client_run(client) != EXIT_SUCCESS) {
 		client_free(&client);
 		return EXIT_FAILURE;
 	}

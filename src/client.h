@@ -1,12 +1,8 @@
 #ifndef MYTFTPCLIENT_CLIENT_H
 #define MYTFTPCLIENT_CLIENT_H
 
+#include "args.h"
 #include <netdb.h>
-
-#define TFTP_PORT "69"
-
-// TODO: make variable
-#define BLOCK_SIZE 512
 
 typedef enum Opcode
 {
@@ -23,14 +19,12 @@ typedef enum Opcode
 typedef struct TFTPClient {
 	int sock;                         ///< Connection socket
 	struct addrinfo *serv_addr;       ///< Server address with the inital TID port (69 by default)
-	char *mode;                       ///< transmission mode ("netascii" or "octet")
 	struct sockaddr_storage tid_addr; ///< Server address with the server's chosen TID port (acquired after first received packet)
-	char *filename;
-	size_t filename_len;
-	size_t block_size;
+	options_t *opts;
 } * client_t;
 
 void client_free(client_t *client);
-client_t client_init(char *server);
+client_t client_init(options_t *opts);
+int client_run(client_t client);
 
 #endif //MYTFTPCLIENT_CLIENT_H

@@ -11,26 +11,26 @@
  * @param filename file to get from the server
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-int conn_send_init(client_t client, opcode_t opcode) {
+int conn_send_init(client_t client) {
 	assert(client != NULL);
 
-	if (opcode != OP_RRQ && opcode != OP_WRQ) {
-		fprintf(stderr, "CONNECTION INIT ERROR: Invalid opcode %d, should be RRQ/WRQ\n", opcode);
+	if (client->opts->operation != OP_RRQ && client->opts->operation != OP_WRQ) {
+		fprintf(stderr, "CONNECTION INIT ERROR: Invalid opcode %d, should be RRQ/WRQ\n", client->opts->operation);
 		return EXIT_FAILURE;
 	}
 
 	// calculate message length and allocate it
-	size_t msg_size = client->filename_len + strlen(client->mode) + 4;
+	size_t msg_size = client->opts->filename_len + strlen(client->opts->mode) + 4;
 	char *message = malloc(msg_size); // 2 bytes for opcode + 2x terminating null byte
 
 	// compose the message
 	char *msg_ptr = message;
 	*msg_ptr++ = 0;
-	*msg_ptr++ = opcode;
+	*msg_ptr++ = (char)client->opts->operation;
 
-	strcpy(msg_ptr, client->filename);
-	msg_ptr += client->filename_len + 1;
-	strcpy(msg_ptr, client->mode);
+	strcpy(msg_ptr, client->opts->filename);
+	msg_ptr += client->opts->filename_len + 1;
+	strcpy(msg_ptr, client->opts->mode);
 
 	// send the message
 	ssize_t sent = sendto(client->sock, message, msg_size, 0, client->serv_addr->ai_addr, client->serv_addr->ai_addrlen);
@@ -83,7 +83,7 @@ int conn_recv(client_t client) {
 	assert(client != NULL);
 
 	char buffer[BUFF_SIZE] = {0};
-	FILE *target_file = fopen(client->filename, "wb");
+	FILE *target_file = fopen(client->opts->filename, "wb");
 	if (target_file == NULL) {
 		perror("FILE OPEN ERROR");
 		return EXIT_FAILURE;
@@ -113,13 +113,13 @@ int conn_recv(client_t client) {
 		}
 
 		// write the data to the target file
-		if (client->mode[0] == 'o') { // binary
+		if (client->opts->mode[0] == 'o') { // binary
 			fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
 				goto error;
 			}
-		} else if (client->mode[0] == 'n') { // netascii
+		} else if (client->opts->mode[0] == 'n') { // netascii
 			size_t unix_len = netascii_to_unix(buffer + 4, recvd - 4);
 			fwrite(buffer + 4, sizeof(char), unix_len, target_file);
 			if (ferror(target_file)) {
@@ -127,7 +127,7 @@ int conn_recv(client_t client) {
 				goto error;
 			}
 		}
-	} while (recvd - 4 == BLOCK_SIZE);
+	} while (recvd - 4 == client->opts->block_size); // TODO: Use negotiated block size
 
 	fclose(target_file);
 	return EXIT_SUCCESS;
@@ -163,17 +163,21 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 
 int conn_send(client_t client) {
 	conn_send_wait_for_ack(client, 0);
-	char *block = calloc(client->block_size, sizeof(char));
+	char *block = calloc(client->opts->block_size, sizeof(char)); // TODO: Use negotiated block size
 
-	FILE *source_file = fopen(client->filename, "rb");
+	FILE *source_file = fopen(client->opts->filename, "rb");
+	if (source_file == NULL) {
+		perror("FILE OPEN ERROR");
+		return EXIT_FAILURE;
+	}
 
 	// send content in blocks
 	size_t block_bytes;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
-		if (client->mode[0] == 'o') { // binary
-			block_bytes = fread(block, sizeof(char), client->block_size, source_file);
-		} else if (client->mode[0] == 'n') {
-			block_bytes = file_to_netascii(source_file, block, client->block_size);
+		if (client->opts->mode[0] == 'o') {                                                  // binary
+			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file); // TODO: Use negotiated block size
+		} else if (client->opts->mode[0] == 'n') {
+			block_bytes = file_to_netascii(source_file, block, client->opts->block_size); // TODO: Use negotiated block size
 		}
 
 		if (ferror(source_file)) {
