@@ -83,11 +83,7 @@ int conn_recv(client_t client) {
 	assert(client != NULL);
 
 	char buffer[BUFF_SIZE] = {0};
-	FILE *target_file = fopen(client->opts->filename, "wb");
-	if (target_file == NULL) {
-		perror("FILE OPEN ERROR");
-		return EXIT_FAILURE;
-	}
+	FILE *target_file = NULL;
 
 	// TODO: resend ACK in case the server sends the same data packet twice
 	ssize_t recvd;
@@ -102,14 +98,21 @@ int conn_recv(client_t client) {
 		buffer[recvd] = 0;
 
 		// process received packet
-		if (*(buffer + 1) != OP_DATA) {
-			// TODO: not a data packet
+		if (*(buffer + 1) == OP_ERROR) {
+			perr(TAG_ERROR_PACKET, buffer + 4);
+			goto error;
+		} else if (*(buffer + 1) != OP_DATA) {
+			perr(TAG_CONN, "Packet with invalid opcode received");
 			goto error;
 		}
 
-		// send ack packet
-		if (conn_recv_ack(client, buffer + 2) != EXIT_SUCCESS) {
-			goto error;
+		// open the file for writing if it is not open yet
+		if (target_file == NULL) {
+			target_file = fopen(client->opts->filename, "wb");
+			if (target_file == NULL) {
+				perror("FILE OPEN ERROR");
+				goto error;
+			}
 		}
 
 		// write the data to the target file
@@ -127,13 +130,20 @@ int conn_recv(client_t client) {
 				goto error;
 			}
 		}
+
+		// send ack packet
+		if (conn_recv_ack(client, buffer + 2) != EXIT_SUCCESS) {
+			goto error;
+		}
 	} while (recvd - 4 == client->opts->block_size); // TODO: Use negotiated block size
 
 	fclose(target_file);
 	return EXIT_SUCCESS;
 
 error:
-	fclose(target_file);
+	if (target_file != NULL) {
+		fclose(target_file);
+	}
 	return EXIT_FAILURE;
 }
 
