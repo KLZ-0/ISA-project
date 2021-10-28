@@ -12,6 +12,7 @@ char *argv[PTR_BUFFER_SIZE];
 
 int main() {
 	options_t opts;
+	client_t client = client_init(&opts);
 
 	while (fgets(buffer, BUFSIZ, stdin)) {
 		int argc = make_argv(buffer, argv, PTR_BUFFER_SIZE);
@@ -23,11 +24,17 @@ int main() {
 		if (parse_options(argc, argv, &opts) != EXIT_SUCCESS) {
 			continue;
 		}
+
+		client_conn_init(client);
+
+		client_run(client);
+
+		client_conn_close(client);
 	}
 
+	client_free(&client);
+	return EXIT_SUCCESS;
 
-	//
-	//	client_t client = client_init(&opts);
 	//	if (client == NULL) {
 	//		return EXIT_FAILURE;
 	//	}
@@ -36,7 +43,4 @@ int main() {
 	//		client_free(&client);
 	//		return EXIT_FAILURE;
 	//	}
-	//
-	//	client_free(&client);
-	//	return EXIT_SUCCESS;
 }

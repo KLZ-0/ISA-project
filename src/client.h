@@ -25,6 +25,8 @@ typedef struct TFTPClient {
 
 void client_free(client_t *client);
 client_t client_init(options_t *opts);
+int client_conn_init(client_t client);
+void client_conn_close(client_t client);
 int client_run(client_t client);
 
 #endif //MYTFTPCLIENT_CLIENT_H

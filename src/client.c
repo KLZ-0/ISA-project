@@ -29,34 +29,45 @@ void client_free(client_t *client) {
  * @return initialized client_t or NULL on error
  */
 client_t client_init(options_t *opts) {
-	struct addrinfo hints = {0};
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_DGRAM;
-
 	client_t client = calloc(1, sizeof(struct TFTPClient));
 	if (client == NULL) {
 		perror("CLIENT INIT ALLOC ERROR");
 		return NULL;
 	}
 
-	if (getaddrinfo(opts->raw_addr, opts->raw_port, &hints, &client->serv_addr)) {
+	client->opts = opts;
+
+	return client;
+}
+
+int client_conn_init(client_t client) {
+	struct addrinfo hints = {0};
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	if (getaddrinfo(client->opts->raw_addr, client->opts->raw_port, &hints, &client->serv_addr)) {
 		perror("CLIENT INIT ADDRESS ERROR");
-		goto error;
+		client->serv_addr = NULL;
+		return EXIT_FAILURE;
 	}
 
 	client->sock = socket(client->serv_addr->ai_family, client->serv_addr->ai_socktype, client->serv_addr->ai_protocol);
 	if (client->sock == -1) {
 		perror("CLIENT INIT SOCKET ERROR");
-		goto error;
+		client->serv_addr = NULL;
+		client->sock = -1;
+		return EXIT_FAILURE;
 	}
 
-	client->opts = opts;
+	return EXIT_SUCCESS;
+}
 
-	return client;
+void client_conn_close(client_t client) {
+	close(client->sock);
+	freeaddrinfo(client->serv_addr);
 
-error:
-	client_free(&client);
-	return NULL;
+	client->sock = -1;
+	client->serv_addr = NULL;
 }
 
 int client_run(client_t client) {
