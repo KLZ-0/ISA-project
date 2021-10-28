@@ -17,7 +17,7 @@ int main() {
 	while (fgets(buffer, BUFSIZ, stdin)) {
 		int argc = make_argv(buffer, argv, PTR_BUFFER_SIZE);
 		if (argc == ARGC_ERROR) {
-			fprintf(stderr, "Input error\n");
+			perr(TAG_INPUT, "argv conversion failed");
 			continue;
 		}
 

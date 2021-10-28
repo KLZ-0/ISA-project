@@ -15,7 +15,7 @@ int conn_send_init(client_t client) {
 	assert(client != NULL);
 
 	if (client->opts->operation != OP_RRQ && client->opts->operation != OP_WRQ) {
-		fprintf(stderr, "CONNECTION INIT ERROR: Invalid opcode %d, should be RRQ/WRQ\n", client->opts->operation);
+		perr(TAG_CONN_INIT, "CONNECTION INIT ERROR: Invalid opcode %d, should be RRQ/WRQ\n", client->opts->operation);
 		return EXIT_FAILURE;
 	}
 

@@ -1,25 +1,12 @@
 #include "args.h"
 #include "client.h"
+#include "util.h"
 #include <ctype.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-/**
- * Wrapper around formatted print to stderr
- * @param fmt
- * @param ...
- */
-void parser_error(const char *fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-
-	fprintf(stderr, "ARGUMENT PARSER ERROR: ");
-	vfprintf(stderr, fmt, args);
-	fputc('\n', stderr);
-}
 
 /**
  * Convert optarg to unsigned long and store it in target
@@ -69,13 +56,13 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				break;
 			case 't':
 				if (optarg_to_ulong(&opts->timeout) != EXIT_SUCCESS) {
-					parser_error("Timeout not a valid number");
+					perr(TAG_ARGSPARSE, "Timeout not a valid number");
 					return EXIT_FAILURE;
 				}
 				break;
 			case 's':
 				if (optarg_to_ulong(&opts->block_size) != EXIT_SUCCESS) {
-					parser_error("Block size not a valid number");
+					perr(TAG_ARGSPARSE, "Block size not a valid number");
 					return EXIT_FAILURE;
 				}
 				break;
@@ -88,7 +75,7 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				} else if (strcmp(optarg, "ascii") == 0 || strcmp(optarg, "netascii") == 0) {
 					opts->mode = "netascii";
 				} else {
-					parser_error("Mode '%s' not one of ( binary | octet | ascii | netascii )", optarg);
+					perr(TAG_ARGSPARSE, "Mode '%s' not one of ( binary | octet | ascii | netascii )", optarg);
 					return EXIT_FAILURE;
 				}
 				break;
@@ -96,7 +83,7 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				opts->raw_addr = optarg;
 				char *comma = strchr(optarg, ',');
 				if (comma == NULL) {
-					parser_error("Invalid address '%s' (must be in the form address,port)", optarg);
+					perr(TAG_ARGSPARSE, "Invalid address '%s' (must be in the form address,port)", optarg);
 					return EXIT_FAILURE;
 				}
 				*comma = 0;
@@ -104,11 +91,11 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				break;
 			case '?':
 				if (strchr("dtsca", optopt))
-					parser_error("Option -%c requires an argument.", optopt);
+					perr(TAG_ARGSPARSE, "Option -%c requires an argument.", optopt);
 				else if (isprint(optopt))
-					parser_error("Unknown option -%c.", optopt);
+					perr(TAG_ARGSPARSE, "Unknown option -%c.", optopt);
 				else
-					parser_error("Unknown option character \\x%x.", optopt);
+					perr(TAG_ARGSPARSE, "Unknown option character \\x%x.", optopt);
 				return EXIT_FAILURE;
 			default:
 				break;
@@ -117,12 +104,12 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 
 	// post-parse checks
 	if (opts->operation == 0) {
-		parser_error("One of -W or -R is required");
+		perr(TAG_ARGSPARSE, "One of -W or -R is required");
 		return EXIT_FAILURE;
 	}
 
 	if (opts->filename == NULL || opts->filename_len == 0) {
-		parser_error("A valid file name is required");
+		perr(TAG_ARGSPARSE, "A valid file name is required");
 		return EXIT_FAILURE;
 	}
 

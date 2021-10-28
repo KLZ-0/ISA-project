@@ -1,4 +1,5 @@
 #include "util.h"
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -137,4 +138,19 @@ int make_argv(char *input, char *argv[], size_t max_argc) {
 	argv[argc - 1][strlen(argv[argc - 1]) - 1] = '\0';
 
 	return argc;
+}
+
+/**
+ * Wrapper around formatted print to stderr
+ * @param tag Application part
+ * @param fmt Message
+ * @param ... format
+ */
+void perr(const char *tag, const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	fprintf(stderr, "%s: ", tag);
+	vfprintf(stderr, fmt, args);
+	fputc('\n', stderr);
 }
