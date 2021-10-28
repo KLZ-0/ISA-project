@@ -113,13 +113,13 @@ int conn_recv(client_t client) {
 		}
 
 		// write the data to the target file
-		if (client->opts->mode[0] == 'o') { // binary
+		if (client->opts->mode[0] == 'o') {
 			fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
 				goto error;
 			}
-		} else if (client->opts->mode[0] == 'n') { // netascii
+		} else if (client->opts->mode[0] == 'n') {
 			size_t unix_len = netascii_to_unix(buffer + 4, recvd - 4);
 			fwrite(buffer + 4, sizeof(char), unix_len, target_file);
 			if (ferror(target_file)) {
@@ -174,7 +174,7 @@ int conn_send(client_t client) {
 	// send content in blocks
 	size_t block_bytes;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
-		if (client->opts->mode[0] == 'o') {                                                  // binary
+		if (client->opts->mode[0] == 'o') {
 			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file); // TODO: Use negotiated block size
 		} else if (client->opts->mode[0] == 'n') {
 			block_bytes = file_to_netascii(source_file, block, client->opts->block_size); // TODO: Use negotiated block size
