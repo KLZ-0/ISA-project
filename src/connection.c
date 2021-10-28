@@ -148,6 +148,8 @@ error:
 }
 
 int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
+	// TODO: resend the data packet if the ACK packet is not received until timeout
+
 	char buffer[BUFF_SIZE] = {0};
 
 	socklen_t addr_size = sizeof(client->tid_addr);
