@@ -8,6 +8,12 @@
 #include <sys/time.h>
 #include <time.h>
 
+/**
+ * Convert data from netascii to unix format
+ * @param data input data to be modified
+ * @param data_size input data size
+ * @return resulting data size (less or equal to data_size)
+ */
 size_t netascii_to_unix(char *data, size_t data_size) {
 	// WARNING: Netascii messages can contain zero bytes mid-string ffs
 	// \r\n -> \n
@@ -48,6 +54,14 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	return newsize;
 }
 
+/**
+ * Read an unspecified number of bytes from a file
+ * so that the resulting block will have block_size bytes in netascii format
+ * @param file input file
+ * @param block output block buffer
+ * @param block_size output block buffer size
+ * @return number of bytes in the output buffer (less or equal to block_size)
+ */
 size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
 	static char lastchar = 0;
 
@@ -211,6 +225,7 @@ void pinfo_cont(const char *fmt, ...) {
 
 /**
  * Convert the source string to unsigned long and store it in target
+ * @param source source string
  * @param target pointer to an unsigned long where the value should be stored
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
@@ -226,6 +241,11 @@ int str_to_ulong(const char *source, unsigned long *target) {
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Find the smallest device MTU
+ * @param sock open socket
+ * @return smallest MTU
+ */
 int find_smallest_mtu(int sock) {
 	int min_mtu = INT_MAX;
 
@@ -236,13 +256,14 @@ int find_smallest_mtu(int sock) {
 		// get interface name from index
 		if (ioctl(sock, SIOCGIFNAME, &tmp) == -1) {
 			// we didn't find any other interfaces
+			// device with index 1 is lo, so this should never return INT_MAX
 			return min_mtu;
 		}
 
 		// get MTU size
 		if (ioctl(sock, SIOCGIFMTU, &tmp) == -1) {
 			perror("IOCTL WARNING");
-			return 0;
+			return min_mtu;
 		}
 
 		// choose the biggest one
@@ -251,5 +272,9 @@ int find_smallest_mtu(int sock) {
 		}
 	}
 
-	return 0;
+	// this should also never happen, but can happen if the user has 255+ interfaces
+	// this is just a safeguard in case ioctl would not want to error out
+	// if the user really has 255+ interfaces either change the value of MAX_INTERFACES
+	// or just deal with a possibly bigger MTU which still shouldn't affect much
+	return min_mtu;
 }

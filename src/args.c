@@ -9,6 +9,13 @@
 #include <string.h>
 #include <sys/stat.h>
 
+/**
+ * Parse the command line-like arguments
+ * @param argc argument count
+ * @param argv argument vector
+ * @param opts structure for option storage
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
 int parse_options(int argc, char *argv[], options_t *opts) {
 	memset(opts, 0, sizeof(struct ProgramOptions));
 	opts->mode = "octet";

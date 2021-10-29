@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * Append TFTP options to the end of an TFTP RRQ/WRQ packet
+ * @param message pointer to the message beginning
+ * @param shift length of the current message + 1
+ * @param option option name
+ * @param value option value
+ */
 void conn_init_msg_append_option(char *message, size_t *shift, char *option, size_t value) {
 	strcpy(message + *shift, option);
 	*shift += strlen(message + *shift) + 1;
@@ -16,7 +23,6 @@ void conn_init_msg_append_option(char *message, size_t *shift, char *option, siz
 /**
  * Establish the connection by sending an RRQ/WRQ packet
  * @param client initialized client
- * @param filename file to get from the server
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
 int conn_init(client_t client) {
@@ -213,6 +219,12 @@ error:
 	return EXIT_FAILURE;
 }
 
+/**
+ * Wait for an ACK packet
+ * @param client initialized client
+ * @param block_id block number with 1 being the first data block
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
 int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 	char buffer[BUFF_SIZE] = {0};
 
@@ -244,6 +256,14 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Send a block to the server
+ * @param client initialized client
+ * @param block data block to be send
+ * @param block_size size of the data block
+ * @param block_id block number with 1 being the first data block
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
 int conn_send_block(client_t client, char *block, size_t block_size, size_t block_id) {
 	char *message = calloc(block_size + 4, sizeof(char));
 
@@ -261,6 +281,11 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Send a file to the server
+ * @param client initialized client
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
 int conn_send(client_t client) {
 	// set timeout for ack packets and wait for one, if not received retry the whole connection initialization
 	int response = conn_send_wait_for_ack(client, 0);

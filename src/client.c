@@ -26,7 +26,7 @@ void client_free(client_t *client) {
 
 /**
  * Initialize the TFTPv2 client structure
- * @param server target server to connect
+ * @param opts pointer transfer options (contents can change during the client's lifetime)
  * @return initialized client_t or NULL on error
  */
 client_t client_init(options_t *opts) {
@@ -41,6 +41,11 @@ client_t client_init(options_t *opts) {
 	return client;
 }
 
+/**
+ * Initialize the connection by opening a socket
+ * @param client initialized client
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
 int client_conn_init(client_t client) {
 	struct addrinfo hints = {0};
 	hints.ai_family = AF_UNSPEC;
@@ -78,6 +83,10 @@ int client_conn_init(client_t client) {
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Terminate the connection by closing the socket and clean up
+ * @param client initialized client
+ */
 void client_conn_close(client_t client) {
 	close(client->sock);
 	freeaddrinfo(client->serv_addr);
@@ -86,6 +95,11 @@ void client_conn_close(client_t client) {
 	client->serv_addr = NULL;
 }
 
+/**
+ * Run the client by executing a transfer request
+ * @param client initialized client
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
 int client_run(client_t client) {
 	if (conn_init(client) != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
