@@ -52,8 +52,10 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				opts->operation = OP_WRQ;
 				break;
 			case 'd':
-				opts->filename = optarg;
-				opts->filename_len = strlen(optarg);
+				opts->filename_abs = optarg;
+				opts->filename_abs_len = strlen(optarg);
+				char *delim = strrchr(optarg, '/');
+				opts->filename = (delim != NULL) ? delim + 1 : optarg;
 				break;
 			case 't':
 				if (optarg_to_ulong(&opts->timeout) != EXIT_SUCCESS) {
@@ -109,7 +111,7 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 		return EXIT_FAILURE;
 	}
 
-	if (opts->filename == NULL || opts->filename_len == 0) {
+	if (opts->filename_abs == NULL || opts->filename_abs_len == 0) {
 		perr(TAG_ARGSPARSE, "A valid file name is required");
 		return EXIT_FAILURE;
 	}

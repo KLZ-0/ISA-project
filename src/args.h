@@ -7,8 +7,9 @@
 
 typedef struct ProgramOptions {
 	int operation;
+	char *filename_abs;
+	size_t filename_abs_len;
 	char *filename;
-	size_t filename_len;
 	size_t timeout;
 	size_t block_size;
 	int multicast;

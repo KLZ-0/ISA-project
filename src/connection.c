@@ -20,7 +20,7 @@ int conn_init(client_t client) {
 	}
 
 	// calculate message length and allocate it
-	size_t msg_size = client->opts->filename_len + strlen(client->opts->mode) + 4;
+	size_t msg_size = client->opts->filename_abs_len + strlen(client->opts->mode) + 4;
 	char *message = malloc(msg_size); // 2 bytes for opcode + 2x terminating null byte
 
 	// compose the message
@@ -28,8 +28,8 @@ int conn_init(client_t client) {
 	*msg_ptr++ = 0;
 	*msg_ptr++ = (char)client->opts->operation;
 
-	strcpy(msg_ptr, client->opts->filename);
-	msg_ptr += client->opts->filename_len + 1;
+	strcpy(msg_ptr, client->opts->filename_abs);
+	msg_ptr += client->opts->filename_abs_len + 1;
 	strcpy(msg_ptr, client->opts->mode);
 
 	// send the message
