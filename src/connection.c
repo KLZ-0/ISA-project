@@ -40,6 +40,8 @@ int conn_init(client_t client) {
 		return EXIT_FAILURE;
 	}
 
+	client_reset_timeout(client);
+
 	// end
 	free(message);
 	return EXIT_SUCCESS;
@@ -92,15 +94,21 @@ int conn_recv(client_t client) {
 
 	FILE *target_file = NULL;
 
+	uint16_t block_id = 0;
 	ssize_t recvd;
 	do {
 		// receive packet
 		socklen_t addr_size = sizeof(client->tid_addr);
 		recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
 		if (recvd == -1) {
+			if (block_id == 0) {
+				pinfo("DATA packet not received, resending RRQ packet");
+				return EXIT_RETRY;
+			}
 			perror("CONNECTION RECV ERROR");
 			goto error;
 		}
+		block_id++;
 		buffer[recvd] = 0;
 
 		// process received packet

@@ -187,4 +187,5 @@ void pinfo(const char *fmt, ...) {
 
 	vprintf(fmt, args);
 	fputc('\n', stdout);
+	fflush(stdout);
 }

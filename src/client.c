@@ -84,8 +84,8 @@ int client_run(client_t client) {
 
 void client_set_timeout(client_t client) {
 	struct timeval timeout;
-	timeout.tv_sec = 0;
-	timeout.tv_usec = (suseconds_t)client->opts->timeout;
+	timeout.tv_sec = (time_t)client->opts->timeout;
+	timeout.tv_usec = 0;
 
 	if (setsockopt(client->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
 		perror("SOCKOPT WARNING");
@@ -94,7 +94,7 @@ void client_set_timeout(client_t client) {
 
 void client_reset_timeout(client_t client) {
 	struct timeval timeout;
-	timeout.tv_sec = 0;
+	timeout.tv_sec = DEFAULT_TIMEOUT;
 	timeout.tv_usec = 0;
 
 	if (setsockopt(client->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
