@@ -6,6 +6,7 @@
 
 #include "client.h"
 #include "connection.h"
+#include "util.h"
 
 /**
  * Free the memory allocated by the TFTPv2 client
@@ -87,5 +88,26 @@ int client_run(client_t client) {
 		return conn_send(client);
 	} else {
 		return conn_recv(client);
+	}
+}
+
+void client_apply_negotiated_opts(client_t client, char *data, size_t opts_size) {
+	char *d_ptr = data;
+	while (*d_ptr != 0) {
+		if (strcmp(d_ptr, "tsize") == 0) {
+			d_ptr += strlen(d_ptr) + 1;
+			if (str_to_ulong(d_ptr, &client->opts->file_size) != EXIT_SUCCESS) {
+				perr(TAG_CONN, "Server returned an invalid tsize value");
+				client->opts->file_size = 0;
+			}
+		} else if (strcmp(d_ptr, "timeout") == 0) {
+			// we can ignore this
+			d_ptr += strlen(d_ptr) + 1;
+		} else if (strcmp(d_ptr, "blksize") == 0) {
+			// TODO
+		}
+
+		// move to the next option
+		d_ptr += strlen(d_ptr) + 1;
 	}
 }

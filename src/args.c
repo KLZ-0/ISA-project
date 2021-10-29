@@ -9,23 +9,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-/**
- * Convert optarg to unsigned long and store it in target
- * @param target pointer to an unsigned long where the value should be stored
- * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
- */
-int optarg_to_ulong(unsigned long *target) {
-	char *endptr;
-
-	unsigned long tmp = strtoul(optarg, &endptr, 0);
-	if (*endptr != '\0') {
-		return EXIT_FAILURE;
-	}
-
-	*target = tmp;
-	return EXIT_SUCCESS;
-}
-
 int parse_options(int argc, char *argv[], options_t *opts) {
 	memset(opts, 0, sizeof(struct ProgramOptions));
 	opts->mode = "octet";
@@ -58,13 +41,17 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 				opts->filename = (delim != NULL) ? delim + 1 : optarg;
 				break;
 			case 't':
-				if (optarg_to_ulong(&opts->timeout) != EXIT_SUCCESS) {
+				if (str_to_ulong(optarg, &opts->timeout) != EXIT_SUCCESS) {
 					perr(TAG_ARGSPARSE, "Timeout not a valid number");
+					return EXIT_FAILURE;
+				}
+				if (opts->timeout == 0) {
+					perr(TAG_ARGSPARSE, "Timeout must be in range 1 - 255");
 					return EXIT_FAILURE;
 				}
 				break;
 			case 's':
-				if (optarg_to_ulong(&opts->block_size) != EXIT_SUCCESS) {
+				if (str_to_ulong(optarg, &opts->block_size) != EXIT_SUCCESS) {
 					perr(TAG_ARGSPARSE, "Block size not a valid number");
 					return EXIT_FAILURE;
 				}
@@ -116,13 +103,22 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 		return EXIT_FAILURE;
 	}
 
+	if (opts->timeout > 255) {
+		perr(TAG_ARGSPARSE, "Timeout must be in range 1 - 255");
+		return EXIT_FAILURE;
+	}
+
 	// test if the file to be sent exists
 	if (opts->operation == OP_WRQ) {
-		struct stat buffer;
-		if (stat(opts->filename, &buffer) == -1) {
+		FILE *file = fopen(opts->filename, "r");
+		if (file == NULL) {
 			perr(TAG_ARGSPARSE, "Can't send a non-existent file");
 			return EXIT_FAILURE;
 		}
+
+		fseek(file, 0L, SEEK_END);
+		opts->file_size = ftell(file);
+		fclose(file);
 	}
 
 	// TODO: limit block_size by the lowest MTU of all the interfaces

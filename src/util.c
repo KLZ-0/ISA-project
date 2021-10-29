@@ -45,7 +45,7 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	return newsize;
 }
 
-size_t file_to_netascii(FILE *file, char *block, size_t block_size, size_t *real_total) {
+size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
 	static char lastchar = 0;
 
 	int c;
@@ -61,7 +61,6 @@ size_t file_to_netascii(FILE *file, char *block, size_t block_size, size_t *real
 		if ((c = fgetc(file)) == EOF) {
 			return i;
 		}
-		*real_total += 1;
 
 		if (ferror(file)) {
 			perror("FILE READ ERROR");
@@ -189,4 +188,37 @@ void pinfo(const char *fmt, ...) {
 	vprintf(fmt, args);
 	fputc('\n', stdout);
 	fflush(stdout);
+}
+
+/**
+ * Wrapper around formatted print to stdout without the ending newline
+ * @param fmt Message
+ * @param ... format
+ */
+void pinfo_cont(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	char buf[BUFF_SIZE];
+	get_time(buf);
+	printf("[%s] ", buf);
+
+	vprintf(fmt, args);
+}
+
+/**
+ * Convert the source string to unsigned long and store it in target
+ * @param target pointer to an unsigned long where the value should be stored
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
+ */
+int str_to_ulong(const char *source, unsigned long *target) {
+	char *endptr;
+
+	unsigned long tmp = strtoul(source, &endptr, 0);
+	if (*endptr != '\0') {
+		return EXIT_FAILURE;
+	}
+
+	*target = tmp;
+	return EXIT_SUCCESS;
 }

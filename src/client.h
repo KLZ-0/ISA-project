@@ -13,6 +13,7 @@ typedef enum Opcode
 	OP_DATA = 3,
 	OP_ACK = 4,
 	OP_ERROR = 5,
+	OP_OPTACK = 6,
 } opcode_t;
 
 /**
@@ -30,5 +31,6 @@ client_t client_init(options_t *opts);
 int client_conn_init(client_t client);
 void client_conn_close(client_t client);
 int client_run(client_t client);
+void client_apply_negotiated_opts(client_t client, char *data, size_t opts_size);
 
 #endif //MYTFTPCLIENT_CLIENT_H

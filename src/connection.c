@@ -19,30 +19,45 @@ int conn_init(client_t client) {
 		return EXIT_FAILURE;
 	}
 
-	// calculate message length and allocate it
-	size_t msg_size = client->opts->filename_abs_len + strlen(client->opts->mode) + 4;
-	char *message = malloc(msg_size); // 2 bytes for opcode + 2x terminating null byte
+	// calculate message length
+	// 2 bytes for opcode + 2x terminating null byte + possible options
+	size_t msg_size = 0;
+	char message[BUFF_SIZE] = {0};
 
 	// compose the message
-	char *msg_ptr = message;
-	*msg_ptr++ = 0;
-	*msg_ptr++ = (char)client->opts->operation;
+	message[msg_size++] = 0;
+	message[msg_size++] = (char)client->opts->operation;
 
-	strcpy(msg_ptr, client->opts->filename_abs);
-	msg_ptr += client->opts->filename_abs_len + 1;
-	strcpy(msg_ptr, client->opts->mode);
+	strcpy(message + msg_size, client->opts->filename_abs);
+	msg_size += client->opts->filename_abs_len + 1;
+	strcpy(message + msg_size, client->opts->mode);
+	msg_size += strlen(message + msg_size) + 1;
+
+	// options
+	// timeout
+	if (client->opts->timeout > 0) {
+		strcpy(message + msg_size, "timeout");
+		msg_size += strlen(message + msg_size) + 1;
+
+		sprintf(message + msg_size, "%lu", client->opts->timeout);
+		msg_size += strlen(message + msg_size) + 1;
+	}
+
+	// tsize
+	strcpy(message + msg_size, "tsize");
+	msg_size += strlen(message + msg_size) + 1;
+
+	sprintf(message + msg_size, "%lu", client->opts->file_size);
+	msg_size += strlen(message + msg_size) + 1;
 
 	// send the message
 	pinfo("Requesting %s from server %s:%s", (client->opts->operation == OP_WRQ) ? "WRITE" : "READ", client->opts->raw_addr, client->opts->raw_port);
 	ssize_t sent = sendto(client->sock, message, msg_size, 0, client->serv_addr->ai_addr, client->serv_addr->ai_addrlen);
 	if (sent == -1) {
 		perror("CONNECTION INIT ERROR");
-		free(message);
 		return EXIT_FAILURE;
 	}
 
-	// end
-	free(message);
 	return EXIT_SUCCESS;
 }
 
@@ -52,7 +67,7 @@ int conn_init(client_t client) {
  * @param block block number to acknowledge (2 byte word, big endian)
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-int conn_recv_send_ack(client_t client, const char *block) {
+int conn_send_ack(client_t client, const char *block) {
 	assert(client != NULL);
 	assert(block != NULL);
 
@@ -108,12 +123,20 @@ int conn_recv(client_t client) {
 		buffer[recvd] = 0;
 
 		// process received packet
-		if (*(buffer + 1) == OP_ERROR) {
-			perr(TAG_ERROR_PACKET, buffer + 4);
-			goto error;
-		} else if (*(buffer + 1) != OP_DATA) {
-			perr(TAG_CONN, "Packet with invalid opcode received");
-			goto error;
+		switch (*(buffer + 1)) {
+			case OP_DATA:
+				break;
+			case OP_ERROR:
+				perr(TAG_ERROR_PACKET, buffer + 4);
+				goto error;
+			case OP_OPTACK:
+				client_apply_negotiated_opts(client, buffer + 2, recvd - 2);
+				conn_send_ack(client, "\0");
+				recvd = (long)client->opts->block_size + 4;
+				continue;
+			default:
+				perr(TAG_CONN, "Packet with invalid opcode received");
+				goto error;
 		}
 
 		// test if the content is the same as the last received packet, including block number
@@ -133,7 +156,6 @@ int conn_recv(client_t client) {
 
 		// write the data to the target file
 		if (client->opts->mode[0] == 'o') {
-			recvd_total += recvd - 4;
 			fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
@@ -141,18 +163,24 @@ int conn_recv(client_t client) {
 			}
 		} else if (client->opts->mode[0] == 'n') {
 			size_t unix_len = netascii_to_unix(buffer + 4, recvd - 4);
-			recvd_total += (long)unix_len;
 			fwrite(buffer + 4, sizeof(char), unix_len, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
 				goto error;
 			}
 		}
-		pinfo("Receiving DATA... %lu B", recvd_total);
+
+		// inform the user
+		pinfo_cont("Receiving DATA... %lu B", recvd_total += recvd - 4);
+		if (client->opts->file_size) {
+			printf(" of %lu B\n", client->opts->file_size);
+		} else {
+			printf("\n");
+		}
 
 	resend_ack:
 		// send ack packet
-		if (conn_recv_send_ack(client, buffer + 2) != EXIT_SUCCESS) {
+		if (conn_send_ack(client, buffer + 2) != EXIT_SUCCESS) {
 			goto error;
 		}
 
@@ -182,12 +210,18 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 		return EXIT_RETRY;
 	}
 
-	if (*(buffer + 1) == OP_ERROR) {
-		perr(TAG_ERROR_PACKET, buffer + 4);
-		return EXIT_FAILURE;
-	} else if (*(buffer + 1) != OP_ACK) {
-		perr(TAG_CONN, "Packet with invalid opcode received");
-		return EXIT_FAILURE;
+	switch (*(buffer + 1)) {
+		case OP_ACK:
+			break;
+		case OP_ERROR:
+			perr(TAG_ERROR_PACKET, buffer + 4);
+			return EXIT_FAILURE;
+		case OP_OPTACK:
+			client_apply_negotiated_opts(client, buffer + 2, recvd - 2);
+			break;
+		default:
+			perr(TAG_CONN, "Packet with invalid opcode received");
+			return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
@@ -235,10 +269,10 @@ int conn_send(client_t client) {
 		// copy the block into the buffer
 		if (client->opts->mode[0] == 'o') {
 			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file); // TODO: Use negotiated block size
-			sent_total += block_bytes;
 		} else if (client->opts->mode[0] == 'n') {
-			block_bytes = file_to_netascii(source_file, block, client->opts->block_size, &sent_total); // TODO: Use negotiated block size
+			block_bytes = file_to_netascii(source_file, block, client->opts->block_size); // TODO: Use negotiated block size
 		}
+		sent_total += block_bytes;
 
 		// exit on error
 		if (ferror(source_file)) {
@@ -249,8 +283,15 @@ int conn_send(client_t client) {
 		int resend_count = 0;
 
 	resend_block:
+		// inform the user
+		pinfo_cont("Sending DATA... %lu B", sent_total);
+		if (client->opts->file_size) {
+			printf(" of %lu B\n", client->opts->file_size);
+		} else {
+			printf("\n");
+		}
+
 		// send the block
-		pinfo("Sending DATA... %lu B", sent_total);
 		conn_send_block(client, block, block_bytes, block_id);
 
 		// wait for ACK
