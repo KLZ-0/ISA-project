@@ -171,7 +171,7 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 	size_t recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
 
 	if (recvd == -1) {
-		return EXIT_FAILURE;
+		return EXIT_RETRY;
 	}
 
 	if (*(buffer + 1) == OP_ERROR) {
@@ -206,10 +206,14 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 int conn_send(client_t client) {
 	// set timeout for ack packets and wait for one, if not received retry the whole connection initialization
 	client_set_timeout(client);
-	if (conn_send_wait_for_ack(client, 0) != EXIT_SUCCESS) {
+	int response = conn_send_wait_for_ack(client, 0);
+	if (response == EXIT_RETRY) {
 		pinfo("ACK packet not received, resending WRQ packet");
 		client_reset_timeout(client);
 		return EXIT_RETRY;
+	} else if (response != EXIT_SUCCESS) {
+		client_reset_timeout(client);
+		return EXIT_FAILURE;
 	}
 
 	// try to open the file for reading
@@ -243,8 +247,8 @@ int conn_send(client_t client) {
 		conn_send_block(client, block, block_bytes, block_id);
 
 		// wait for ACK
-		if (conn_send_wait_for_ack(client, block_id) != EXIT_SUCCESS) {
-			if (resend_count++ < RESEND_COUNT_MAX) {
+		if ((response = conn_send_wait_for_ack(client, block_id)) != EXIT_SUCCESS) {
+			if (resend_count++ < RESEND_COUNT_MAX && response == EXIT_RETRY) {
 				pinfo("ACK packet not received, resending DATA packet");
 				goto resend_block;
 			}
