@@ -136,7 +136,7 @@ int conn_recv(client_t client) {
 				perr(TAG_ERROR_PACKET, buffer + 4);
 				goto error;
 			case OP_OPTACK:
-				client_apply_negotiated_opts(client, buffer + 2, recvd - 2);
+				client_apply_negotiated_opts(client, buffer + 2);
 				buffer = malloc(client->opts->block_size);
 				buffer_alt = malloc(client->opts->block_size);
 				buffer_allocd = 1;
@@ -234,7 +234,7 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 			perr(TAG_ERROR_PACKET, buffer + 4);
 			return EXIT_FAILURE;
 		case OP_OPTACK:
-			client_apply_negotiated_opts(client, buffer + 2, recvd - 2);
+			client_apply_negotiated_opts(client, buffer + 2);
 			break;
 		default:
 			perr(TAG_CONN, "Packet with invalid opcode received");

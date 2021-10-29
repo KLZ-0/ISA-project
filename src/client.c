@@ -98,7 +98,12 @@ int client_run(client_t client) {
 	}
 }
 
-void client_apply_negotiated_opts(client_t client, char *data, size_t opts_size) {
+/**
+ * Apply the negotiated options
+ * @param client initialized client
+ * @param data packet data
+ */
+void client_apply_negotiated_opts(client_t client, char *data) {
 	char *d_ptr = data;
 	int got_blksize_response = 0;
 	while (*d_ptr != 0) {
