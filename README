@@ -1,0 +1,41 @@
+TFTPv2 client
+
+-------- General --------
+
+Compilation:
+make
+
+Running:
+./myftpclient
+
+A transfer command is a string of options terminated by a newline
+The client executes each transfer command separately
+To exit the shell send an EOF using ctrl+D
+
+-------- Options --------
+
+Mandatory
+-R / -W                 Operation (read or write)
+-d <directory/file>     File location on the server (the local file location is the current working directory)
+
+Optional
+-t <timeout>            Negotiable server packet resend timeout in seconds
+-s <block_size>         Negotiable transfer block size (limited by the lowest interface MTU)
+-c <mode>               Transfer mode - "netascii"/"ascii" or "octet"/"binary"
+-a <address,port>       Server address and port separated by a comma
+
+-------- Files --------
+
+Makefile
+manual.pdf
+README
+src
+├── args.c
+├── args.h
+├── client.c
+├── client.h
+├── connection.c
+├── connection.h
+├── main.c
+├── util.c
+└── util.h
