@@ -23,7 +23,7 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	char tmplastchar = 0;
 	static char lastchar = 0;
 
-	char buffer[BUFF_SIZE] = {0};
+	char *buffer = malloc(data_size);
 
 	char *d_ptr = buffer;
 	size_t newsize = 0;

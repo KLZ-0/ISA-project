@@ -31,12 +31,14 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 		switch (c) {
 			case 'R':
 				if (opts->operation != 0) {
+					perr(TAG_ARGSPARSE, "Only one of -W or -R is allowed");
 					return EXIT_FAILURE;
 				}
 				opts->operation = OP_RRQ;
 				break;
 			case 'W':
 				if (opts->operation != 0) {
+					perr(TAG_ARGSPARSE, "Only one of -W or -R is allowed");
 					return EXIT_FAILURE;
 				}
 				opts->operation = OP_WRQ;
