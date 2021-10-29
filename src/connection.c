@@ -208,8 +208,10 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 int conn_send(client_t client) {
 	// set timeout for ack packets and wait for one, if not received retry the whole connection initialization
 	int response = conn_send_wait_for_ack(client, 0);
-	if (response != EXIT_SUCCESS) {
+	if (response == EXIT_RETRY) {
 		perror("Server cannot be reached");
+	}
+	if (response != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
