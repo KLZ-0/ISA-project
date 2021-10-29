@@ -100,6 +100,7 @@ int client_run(client_t client) {
 
 void client_apply_negotiated_opts(client_t client, char *data, size_t opts_size) {
 	char *d_ptr = data;
+	int got_blksize_response = 0;
 	while (*d_ptr != 0) {
 		if (strcmp(d_ptr, "tsize") == 0) {
 			d_ptr += strlen(d_ptr) + 1;
@@ -117,10 +118,15 @@ void client_apply_negotiated_opts(client_t client, char *data, size_t opts_size)
 				perr(TAG_CONN, "Server returned an invalid tsize value");
 				client->opts->file_size = 0;
 			}
-			// TODO: is we didn't get this response but it is set in opts, reset opts to default block size
+			got_blksize_response = 1;
 		}
 
 		// move to the next option
 		d_ptr += strlen(d_ptr) + 1;
+	}
+
+	// restore the block size to default if the server didn't respond to it
+	if (client->opts->block_size != DEFAULT_BLOCK_SIZE && !got_blksize_response) {
+		client->opts->block_size = DEFAULT_BLOCK_SIZE;
 	}
 }
