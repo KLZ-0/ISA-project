@@ -104,8 +104,8 @@ int conn_recv(client_t client) {
 	// Two buffers which we will alternate to check whether the received message is not the same as before
 	// which may happen in case the ACK packet is not received by the server
 	// Alternating pointer -> because then we don't need to copy the data after each received packet, we simply change the pointer
-	char buf1[BUFF_SIZE] = {0};
-	char buf2[BUFF_SIZE] = {0};
+	char buf1[DEFAULT_BLOCK_SIZE + 4] = {0};
+	char buf2[DEFAULT_BLOCK_SIZE + 4] = {0};
 	char *buffer = buf1;
 	char *buffer_alt = buf2;
 	int buffer_allocd = 0;
@@ -123,12 +123,14 @@ int conn_recv(client_t client) {
 			perror("Server cannot be reached");
 			goto error;
 		}
-		block_id++;
-		buffer[recvd] = 0;
 
 		// process received packet
 		switch (*(buffer + 1)) {
 			case OP_DATA:
+				if (block_id++ == 0 && buffer_allocd == 0) {
+					// the server ignored the options and sent the data -> continue with the default block size
+					client->opts->block_size = DEFAULT_BLOCK_SIZE;
+				}
 				break;
 			case OP_ERROR:
 				perr(TAG_ERROR_PACKET, buffer + 4);
@@ -223,6 +225,10 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 
 	switch (*(buffer + 1)) {
 		case OP_ACK:
+			if (block_id == 0) {
+				// the server ignored the options and sent the data -> continue with the default block size
+				client->opts->block_size = DEFAULT_BLOCK_SIZE;
+			}
 			break;
 		case OP_ERROR:
 			perr(TAG_ERROR_PACKET, buffer + 4);
