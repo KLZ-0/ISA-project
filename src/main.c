@@ -15,7 +15,7 @@ int main() {
 	options_t opts;
 	client_t client = client_init(&opts);
 
-	while (fgets(buffer, BUFSIZ, stdin)) {
+	while (printf("> "), fflush(stdout), fgets(buffer, BUFSIZ, stdin)) {
 		int argc = make_argv(buffer, argv, PTR_BUFFER_SIZE);
 		if (argc == ARGC_ERROR) {
 			perr(TAG_INPUT, "argv conversion failed");
@@ -33,6 +33,7 @@ int main() {
 		client_conn_close(client);
 	}
 
+	fputc('\n', stdout);
 	client_free(&client);
 	return EXIT_SUCCESS;
 
