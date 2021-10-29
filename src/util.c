@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
 size_t netascii_to_unix(char *data, size_t data_size) {
 	// WARNING: Netascii messages can contain zero bytes mid-string ffs
@@ -153,4 +155,36 @@ void perr(const char *tag, const char *fmt, ...) {
 	fprintf(stderr, "%s: ", tag);
 	vfprintf(stderr, fmt, args);
 	fputc('\n', stderr);
+}
+
+void get_time(char *buffer) {
+	char format_buffer[BUFF_SIZE];
+
+	// seconds + milliseconds
+	struct timeval now;
+	gettimeofday(&now, NULL);
+
+	// format string generation
+	struct tm *timestruct = localtime(&now.tv_sec);
+	strftime(format_buffer, BUFF_SIZE, "%F %T.%%li", timestruct);
+
+	// add the milliseconds
+	sprintf(buffer, format_buffer, now.tv_usec / 1000);
+}
+
+/**
+ * Wrapper around formatted print to stdout
+ * @param fmt Message
+ * @param ... format
+ */
+void pinfo(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+
+	char buf[BUFF_SIZE];
+	get_time(buf);
+	printf("[%s] ", buf);
+
+	vprintf(fmt, args);
+	fputc('\n', stdout);
 }
