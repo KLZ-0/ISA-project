@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+void conn_init_msg_append_option(char *message, size_t *shift, char *option, size_t value) {
+	strcpy(message + *shift, option);
+	*shift += strlen(message + *shift) + 1;
+
+	sprintf(message + *shift, "%lu", value);
+	*shift += strlen(message + *shift) + 1;
+}
+
 /**
  * Establish the connection by sending an RRQ/WRQ packet
  * @param client initialized client
@@ -28,34 +36,22 @@ int conn_init(client_t client) {
 	message[msg_size++] = 0;
 	message[msg_size++] = (char)client->opts->operation;
 
+	// filename
 	strcpy(message + msg_size, client->opts->filename_abs);
 	msg_size += client->opts->filename_abs_len + 1;
 	strcpy(message + msg_size, client->opts->mode);
 	msg_size += strlen(message + msg_size) + 1;
 
-	// options
 	// timeout
 	if (client->opts->timeout > 0) {
-		strcpy(message + msg_size, "timeout");
-		msg_size += strlen(message + msg_size) + 1;
-
-		sprintf(message + msg_size, "%lu", client->opts->timeout);
-		msg_size += strlen(message + msg_size) + 1;
+		conn_init_msg_append_option(message, &msg_size, "timeout", client->opts->timeout);
 	}
 
 	// tsize
-	strcpy(message + msg_size, "tsize");
-	msg_size += strlen(message + msg_size) + 1;
-
-	sprintf(message + msg_size, "%lu", client->opts->file_size);
-	msg_size += strlen(message + msg_size) + 1;
+	conn_init_msg_append_option(message, &msg_size, "tsize", client->opts->file_size);
 
 	// blksize
-	strcpy(message + msg_size, "blksize");
-	msg_size += strlen(message + msg_size) + 1;
-
-	sprintf(message + msg_size, "%lu", client->opts->block_size);
-	msg_size += strlen(message + msg_size) + 1;
+	conn_init_msg_append_option(message, &msg_size, "blksize", client->opts->block_size);
 
 	// send the message
 	pinfo("Requesting %s from server %s:%s", (client->opts->operation == OP_WRQ) ? "WRITE" : "READ", client->opts->raw_addr, client->opts->raw_port);
