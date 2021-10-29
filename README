@@ -21,8 +21,8 @@ Mandatory
 Optional
 -t <timeout>            Negotiable server packet resend timeout in seconds
 -s <block_size>         Negotiable transfer block size (limited by the lowest interface MTU)
--c <mode>               Transfer mode - "netascii"/"ascii" or "octet"/"binary"
--a <address,port>       Server address and port separated by a comma
+-c <mode>               Transfer mode - "netascii"/"ascii" or "octet"/"binary", the defult is "octet"/"binary"
+-a <address,port>       Server address and port separated by a comma, the default is 127.0.0.1,69
 
 -------- Files --------
 
