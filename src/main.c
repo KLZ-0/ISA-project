@@ -28,14 +28,7 @@ int main() {
 
 		client_conn_init(client);
 
-		for (int i = 0; i < RESEND_COUNT_MAX; i++) {
-			if (client_run(client) != EXIT_RETRY) {
-				break;
-			}
-			if (i == RESEND_COUNT_MAX - 1) {
-				pinfo("Server cannot be reached");
-			}
-		}
+		client_run(client);
 
 		client_conn_close(client);
 	}

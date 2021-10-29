@@ -30,7 +30,5 @@ client_t client_init(options_t *opts);
 int client_conn_init(client_t client);
 void client_conn_close(client_t client);
 int client_run(client_t client);
-void client_set_timeout(client_t client);
-void client_reset_timeout(client_t client);
 
 #endif //MYTFTPCLIENT_CLIENT_H

@@ -40,8 +40,6 @@ int conn_init(client_t client) {
 		return EXIT_FAILURE;
 	}
 
-	client_reset_timeout(client);
-
 	// end
 	free(message);
 	return EXIT_SUCCESS;
@@ -101,11 +99,7 @@ int conn_recv(client_t client) {
 		socklen_t addr_size = sizeof(client->tid_addr);
 		recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
 		if (recvd == -1) {
-			if (block_id == 0) {
-				pinfo("DATA packet not received, resending RRQ packet");
-				return EXIT_RETRY;
-			}
-			perror("CONNECTION RECV ERROR");
+			perror("Server cannot be reached");
 			goto error;
 		}
 		block_id++;
@@ -213,14 +207,9 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 
 int conn_send(client_t client) {
 	// set timeout for ack packets and wait for one, if not received retry the whole connection initialization
-	client_set_timeout(client);
 	int response = conn_send_wait_for_ack(client, 0);
-	if (response == EXIT_RETRY) {
-		pinfo("ACK packet not received, resending WRQ packet");
-		client_reset_timeout(client);
-		return EXIT_RETRY;
-	} else if (response != EXIT_SUCCESS) {
-		client_reset_timeout(client);
+	if (response != EXIT_SUCCESS) {
+		perror("Server cannot be reached");
 		return EXIT_FAILURE;
 	}
 
@@ -264,12 +253,10 @@ int conn_send(client_t client) {
 		}
 	}
 
-	client_reset_timeout(client);
 	fclose(source_file);
 	return EXIT_SUCCESS;
 
 error:
-	client_reset_timeout(client);
 	fclose(source_file);
 	return EXIT_FAILURE;
 }

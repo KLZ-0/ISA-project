@@ -59,6 +59,14 @@ int client_conn_init(client_t client) {
 		return EXIT_FAILURE;
 	}
 
+	struct timeval timeout;
+	timeout.tv_sec = DEFAULT_TIMEOUT;
+	timeout.tv_usec = 0;
+
+	if (setsockopt(client->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
+		perror("SOCKOPT WARNING");
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -79,25 +87,5 @@ int client_run(client_t client) {
 		return conn_send(client);
 	} else {
 		return conn_recv(client);
-	}
-}
-
-void client_set_timeout(client_t client) {
-	struct timeval timeout;
-	timeout.tv_sec = (time_t)client->opts->timeout;
-	timeout.tv_usec = 0;
-
-	if (setsockopt(client->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
-		perror("SOCKOPT WARNING");
-	}
-}
-
-void client_reset_timeout(client_t client) {
-	struct timeval timeout;
-	timeout.tv_sec = DEFAULT_TIMEOUT;
-	timeout.tv_usec = 0;
-
-	if (setsockopt(client->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0) {
-		perror("SOCKOPT WARNING");
 	}
 }
