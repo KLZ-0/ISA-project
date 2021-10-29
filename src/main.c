@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "client.h"
+#include "connection.h"
 #include "util.h"
 
 #define PTR_BUFFER_SIZE 1024
@@ -27,7 +28,11 @@ int main() {
 
 		client_conn_init(client);
 
-		client_run(client);
+		for (int i = 0; i < RESEND_COUNT_MAX; ++i) {
+			if (client_run(client) != EXIT_RETRY) {
+				break;
+			}
+		}
 
 		client_conn_close(client);
 	}

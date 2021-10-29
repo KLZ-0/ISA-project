@@ -165,15 +165,12 @@ error:
 }
 
 int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
-	// TODO: resend the data packet if the ACK packet is not received until timeout
-
 	char buffer[BUFF_SIZE] = {0};
 
 	socklen_t addr_size = sizeof(client->tid_addr);
 	size_t recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
 
 	if (recvd == -1) {
-		perror("CONNECTION RECV ERROR");
 		return EXIT_FAILURE;
 	}
 
@@ -189,6 +186,7 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 }
 
 int conn_send_block(client_t client, char *block, size_t block_size, size_t block_id) {
+	pinfo("Sending block (%lu) of size %lu", block_id, block_size);
 	char *message = calloc(block_size + 4, sizeof(char));
 
 	message[0] = 0;
@@ -206,11 +204,15 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 }
 
 int conn_send(client_t client) {
+	// set timeout for ack packets and wait for one, if not received retry the whole connection initialization
+	client_set_timeout(client);
 	if (conn_send_wait_for_ack(client, 0) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
+		pinfo("ACK packet not received, resending WRQ packet");
+		client_reset_timeout(client);
+		return EXIT_RETRY;
 	}
-	char *block = calloc(client->opts->block_size, sizeof(char)); // TODO: Use negotiated block size
 
+	// try to open the file for reading
 	FILE *source_file = fopen(client->opts->filename, "rb");
 	if (source_file == NULL) {
 		perror("FILE OPEN ERROR");
@@ -218,29 +220,44 @@ int conn_send(client_t client) {
 	}
 
 	// send content in blocks
+	char *block = calloc(client->opts->block_size, sizeof(char)); // TODO: Use negotiated block size
 	size_t block_bytes;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
+		// copy the block into the buffer
 		if (client->opts->mode[0] == 'o') {
 			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file); // TODO: Use negotiated block size
 		} else if (client->opts->mode[0] == 'n') {
 			block_bytes = file_to_netascii(source_file, block, client->opts->block_size); // TODO: Use negotiated block size
 		}
 
+		// exit on error
 		if (ferror(source_file)) {
 			perror("FILE READ ERROR");
 			goto error;
 		}
 
+		int resend_count = 0;
+
+	resend_block:
+		// send the block
 		conn_send_block(client, block, block_bytes, block_id);
+
+		// wait for ACK
 		if (conn_send_wait_for_ack(client, block_id) != EXIT_SUCCESS) {
+			if (resend_count++ < RESEND_COUNT_MAX) {
+				pinfo("ACK packet not received, resending DATA packet");
+				goto resend_block;
+			}
 			goto error;
 		}
 	}
 
+	client_reset_timeout(client);
 	fclose(source_file);
 	return EXIT_SUCCESS;
 
 error:
+	client_reset_timeout(client);
 	fclose(source_file);
 	return EXIT_FAILURE;
 }
