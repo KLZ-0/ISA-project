@@ -68,6 +68,13 @@ int client_conn_init(client_t client) {
 		perror("SOCKOPT WARNING");
 	}
 
+	int max_block_size = find_smallest_mtu(client->sock);
+	if (client->opts->block_size > max_block_size) {
+		perr(TAG_CONN_INIT, "Specified block size (%lu) is larger than the smallest interface MTU (%lu)\n", client->opts->block_size, max_block_size);
+		client_conn_close(client);
+		return EXIT_FAILURE;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -104,7 +111,13 @@ void client_apply_negotiated_opts(client_t client, char *data, size_t opts_size)
 			// we can ignore this
 			d_ptr += strlen(d_ptr) + 1;
 		} else if (strcmp(d_ptr, "blksize") == 0) {
-			// TODO
+			d_ptr += strlen(d_ptr) + 1;
+			if (str_to_ulong(d_ptr, &client->opts->block_size) != EXIT_SUCCESS) {
+				// send an error packet also
+				perr(TAG_CONN, "Server returned an invalid tsize value");
+				client->opts->file_size = 0;
+			}
+			// TODO: is we didn't get this response but it is set in opts, reset opts to default block size
 		}
 
 		// move to the next option

@@ -50,6 +50,13 @@ int conn_init(client_t client) {
 	sprintf(message + msg_size, "%lu", client->opts->file_size);
 	msg_size += strlen(message + msg_size) + 1;
 
+	// blksize
+	strcpy(message + msg_size, "blksize");
+	msg_size += strlen(message + msg_size) + 1;
+
+	sprintf(message + msg_size, "%lu", client->opts->block_size);
+	msg_size += strlen(message + msg_size) + 1;
+
 	// send the message
 	pinfo("Requesting %s from server %s:%s", (client->opts->operation == OP_WRQ) ? "WRITE" : "READ", client->opts->raw_addr, client->opts->raw_port);
 	ssize_t sent = sendto(client->sock, message, msg_size, 0, client->serv_addr->ai_addr, client->serv_addr->ai_addrlen);
@@ -105,6 +112,7 @@ int conn_recv(client_t client) {
 	char buf2[BUFF_SIZE] = {0};
 	char *buffer = buf1;
 	char *buffer_alt = buf2;
+	int buffer_allocd = 0;
 
 	FILE *target_file = NULL;
 
@@ -114,7 +122,7 @@ int conn_recv(client_t client) {
 	do {
 		// receive packet
 		socklen_t addr_size = sizeof(client->tid_addr);
-		recvd = recvfrom(client->sock, buffer, BUFF_SIZE - 1, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
+		recvd = recvfrom(client->sock, buffer, client->opts->block_size + 4, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
 		if (recvd == -1) {
 			perror("Server cannot be reached");
 			goto error;
@@ -131,6 +139,9 @@ int conn_recv(client_t client) {
 				goto error;
 			case OP_OPTACK:
 				client_apply_negotiated_opts(client, buffer + 2, recvd - 2);
+				buffer = malloc(client->opts->block_size);
+				buffer_alt = malloc(client->opts->block_size);
+				buffer_allocd = 1;
 				conn_send_ack(client, "\0");
 				recvd = (long)client->opts->block_size + 4;
 				continue;
@@ -188,7 +199,7 @@ int conn_recv(client_t client) {
 		char *tmp = buffer;
 		buffer = buffer_alt;
 		buffer_alt = tmp;
-	} while (recvd - 4 == client->opts->block_size); // TODO: Use negotiated block size
+	} while (recvd - 4 == client->opts->block_size);
 
 	fclose(target_file);
 	return EXIT_SUCCESS;
@@ -196,6 +207,10 @@ int conn_recv(client_t client) {
 error:
 	if (target_file != NULL) {
 		fclose(target_file);
+	}
+	if (buffer_allocd) {
+		free(buffer);
+		free(buffer_alt);
 	}
 	return EXIT_FAILURE;
 }
@@ -262,15 +277,15 @@ int conn_send(client_t client) {
 	}
 
 	// send content in blocks
-	char *block = calloc(client->opts->block_size, sizeof(char)); // TODO: Use negotiated block size
+	char *block = calloc(client->opts->block_size, sizeof(char));
 	size_t block_bytes;
 	size_t sent_total = 0;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
 		// copy the block into the buffer
 		if (client->opts->mode[0] == 'o') {
-			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file); // TODO: Use negotiated block size
+			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file);
 		} else if (client->opts->mode[0] == 'n') {
-			block_bytes = file_to_netascii(source_file, block, client->opts->block_size); // TODO: Use negotiated block size
+			block_bytes = file_to_netascii(source_file, block, client->opts->block_size);
 		}
 		sent_total += block_bytes;
 
