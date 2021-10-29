@@ -6,6 +6,9 @@
 
 #define EXIT_RETRY 3
 
+/**
+ * TFTPv2 opcodes
+ */
 typedef enum Opcode
 {
 	OP_RRQ = 1,
@@ -23,7 +26,7 @@ typedef struct TFTPClient {
 	int sock;                         ///< Connection socket
 	struct addrinfo *serv_addr;       ///< Server address with the inital TID port (69 by default)
 	struct sockaddr_storage tid_addr; ///< Server address with the server's chosen TID port (acquired after first received packet)
-	options_t *opts;
+	options_t *opts;                  ///< transfer options
 } * client_t;
 
 void client_free(client_t *client);

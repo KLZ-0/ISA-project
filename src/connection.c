@@ -81,7 +81,7 @@ int conn_send_ack(client_t client, const char *block) {
 	assert(block != NULL);
 
 	// compose the message
-	char ack_msg[ACK_MSG_SIZE];
+	char ack_msg[ACK_SIZE];
 
 	ack_msg[0] = 0;
 	ack_msg[1] = OP_ACK;
@@ -90,7 +90,7 @@ int conn_send_ack(client_t client, const char *block) {
 
 	// send the message
 	socklen_t addr_size = sizeof(client->tid_addr);
-	size_t sent = sendto(client->sock, ack_msg, ACK_MSG_SIZE, 0, (struct sockaddr *)&client->tid_addr, addr_size);
+	size_t sent = sendto(client->sock, ack_msg, ACK_SIZE, 0, (struct sockaddr *)&client->tid_addr, addr_size);
 	if (sent == -1) {
 		perror("CONNECTION RECV ACK ERROR");
 		return EXIT_FAILURE;
