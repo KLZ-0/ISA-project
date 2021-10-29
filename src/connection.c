@@ -311,10 +311,10 @@ int conn_send(client_t client) {
 		// copy the block into the buffer
 		if (client->opts->mode[0] == 'o') {
 			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file);
+			sent_total += block_bytes;
 		} else if (client->opts->mode[0] == 'n') {
-			block_bytes = file_to_netascii(source_file, block, client->opts->block_size);
+			block_bytes = file_to_netascii(source_file, block, client->opts->block_size, &sent_total);
 		}
-		sent_total += block_bytes;
 
 		// exit on error
 		if (ferror(source_file)) {
