@@ -1,7 +1,10 @@
 #include "util.h"
+#include <limits.h>
+#include <net/if.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -221,4 +224,32 @@ int str_to_ulong(const char *source, unsigned long *target) {
 
 	*target = tmp;
 	return EXIT_SUCCESS;
+}
+
+int find_smallest_mtu(int sock) {
+	int min_mtu = INT_MAX;
+
+	struct ifreq tmp;
+	for (int i = 1; i < MAX_INTERFACES; ++i) {
+		tmp.ifr_ifindex = i;
+
+		// get interface name from index
+		if (ioctl(sock, SIOCGIFNAME, &tmp) == -1) {
+			// we didn't find any other interfaces
+			return min_mtu;
+		}
+
+		// get MTU size
+		if (ioctl(sock, SIOCGIFMTU, &tmp) == -1) {
+			perror("IOCTL WARNING");
+			return 0;
+		}
+
+		// choose the biggest one
+		if (tmp.ifr_mtu < min_mtu) {
+			min_mtu = tmp.ifr_mtu;
+		}
+	}
+
+	return 0;
 }

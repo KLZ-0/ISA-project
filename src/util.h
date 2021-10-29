@@ -6,6 +6,7 @@
 #define PROG_NAME "myftpclient"
 #define BUFF_SIZE 1024
 #define ARGC_ERROR -1
+#define MAX_INTERFACES 255
 
 #define TAG_ARGSPARSE "ARGUMENT PARSER ERROR"
 #define TAG_INPUT "INPUT ERROR"
@@ -20,5 +21,6 @@ void perr(const char *tag, const char *fmt, ...);
 void pinfo(const char *fmt, ...);
 void pinfo_cont(const char *fmt, ...);
 int str_to_ulong(const char *source, unsigned long *target);
+int find_smallest_mtu(int sock);
 
 #endif //MYTFTPCLIENT_UTIL_H
