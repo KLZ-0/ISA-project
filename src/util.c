@@ -45,7 +45,7 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	return newsize;
 }
 
-size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
+size_t file_to_netascii(FILE *file, char *block, size_t block_size, size_t *real_total) {
 	static char lastchar = 0;
 
 	int c;
@@ -61,6 +61,7 @@ size_t file_to_netascii(FILE *file, char *block, size_t block_size) {
 		if ((c = fgetc(file)) == EOF) {
 			return i;
 		}
+		*real_total += 1;
 
 		if (ferror(file)) {
 			perror("FILE READ ERROR");

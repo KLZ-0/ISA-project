@@ -33,6 +33,7 @@ int conn_init(client_t client) {
 	strcpy(msg_ptr, client->opts->mode);
 
 	// send the message
+	pinfo("Requesting %s from server %s:%s", (client->opts->operation == OP_WRQ) ? "WRITE" : "READ", client->opts->raw_addr, client->opts->raw_port);
 	ssize_t sent = sendto(client->sock, message, msg_size, 0, client->serv_addr->ai_addr, client->serv_addr->ai_addrlen);
 	if (sent == -1) {
 		perror("CONNECTION INIT ERROR");
@@ -94,6 +95,7 @@ int conn_recv(client_t client) {
 
 	uint16_t block_id = 0;
 	ssize_t recvd;
+	ssize_t recvd_total = 0;
 	do {
 		// receive packet
 		socklen_t addr_size = sizeof(client->tid_addr);
@@ -116,6 +118,7 @@ int conn_recv(client_t client) {
 
 		// test if the content is the same as the last received packet, including block number
 		if (memcmp(buffer, buffer_alt, recvd) == 0) {
+			pinfo("Received duplicated DATA packet... resending ACK for previous block");
 			goto resend_ack;
 		}
 
@@ -130,6 +133,7 @@ int conn_recv(client_t client) {
 
 		// write the data to the target file
 		if (client->opts->mode[0] == 'o') {
+			recvd_total += recvd - 4;
 			fwrite(buffer + 4, sizeof(char), recvd - 4, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
@@ -137,12 +141,14 @@ int conn_recv(client_t client) {
 			}
 		} else if (client->opts->mode[0] == 'n') {
 			size_t unix_len = netascii_to_unix(buffer + 4, recvd - 4);
+			recvd_total += (long)unix_len;
 			fwrite(buffer + 4, sizeof(char), unix_len, target_file);
 			if (ferror(target_file)) {
 				perror("FILE WRITE ERROR");
 				goto error;
 			}
 		}
+		pinfo("Receiving DATA... %lu B", recvd_total);
 
 	resend_ack:
 		// send ack packet
@@ -188,7 +194,6 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 }
 
 int conn_send_block(client_t client, char *block, size_t block_size, size_t block_id) {
-	pinfo("Sending block (%lu) of size %lu", block_id, block_size);
 	char *message = calloc(block_size + 4, sizeof(char));
 
 	message[0] = 0;
@@ -225,12 +230,14 @@ int conn_send(client_t client) {
 	// send content in blocks
 	char *block = calloc(client->opts->block_size, sizeof(char)); // TODO: Use negotiated block size
 	size_t block_bytes;
+	size_t sent_total = 0;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
 		// copy the block into the buffer
 		if (client->opts->mode[0] == 'o') {
 			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file); // TODO: Use negotiated block size
+			sent_total += block_bytes;
 		} else if (client->opts->mode[0] == 'n') {
-			block_bytes = file_to_netascii(source_file, block, client->opts->block_size); // TODO: Use negotiated block size
+			block_bytes = file_to_netascii(source_file, block, client->opts->block_size, &sent_total); // TODO: Use negotiated block size
 		}
 
 		// exit on error
@@ -243,6 +250,7 @@ int conn_send(client_t client) {
 
 	resend_block:
 		// send the block
+		pinfo("Sending DATA... %lu B", sent_total);
 		conn_send_block(client, block, block_bytes, block_id);
 
 		// wait for ACK

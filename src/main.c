@@ -33,7 +33,9 @@ int main() {
 			continue;
 		}
 
-		client_run(client);
+		if (client_run(client) == EXIT_SUCCESS) {
+			pinfo("Transfer completed without errors");
+		}
 
 		client_conn_close(client);
 	}
