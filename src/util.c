@@ -49,6 +49,7 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	}
 
 	memcpy(data, buffer, newsize + 1);
+	free(buffer);
 
 	lastchar = tmplastchar;
 	return newsize;
