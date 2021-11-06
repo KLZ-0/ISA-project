@@ -87,7 +87,7 @@ int client_conn_init(client_t client) {
 
 	int max_block_size = find_smallest_mtu(client->sock);
 	if (client->opts->block_size > max_block_size) {
-		perr(TAG_CONN_INIT, "Specified block size (%lu) is larger than the smallest interface MTU (%lu)\n", client->opts->block_size, max_block_size);
+		perr(TAG_CONN_INIT, "Specified block size (%lu) is larger than the smallest interface MTU (%lu)", client->opts->block_size, max_block_size);
 		client_conn_close(client);
 		return EXIT_FAILURE;
 	}
