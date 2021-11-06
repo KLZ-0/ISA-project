@@ -110,11 +110,9 @@ int conn_recv(client_t client) {
 	// Two buffers which we will alternate to check whether the received message is not the same as before
 	// which may happen in case the ACK packet is not received by the server
 	// Alternating pointer -> because then we don't need to copy the data after each received packet, we simply change the pointer
-	char buf1[DEFAULT_BLOCK_SIZE + 4] = {0};
-	char buf2[DEFAULT_BLOCK_SIZE + 4] = {0};
-	char *buffer = buf1;
-	char *buffer_alt = buf2;
-	int buffer_allocd = 0;
+	char *buffer = client->block_buffer;
+	char *buffer_alt = client->block_buffer_alt;
+	int optack_received = 0;
 
 	FILE *target_file = NULL;
 
@@ -133,7 +131,7 @@ int conn_recv(client_t client) {
 		// process received packet
 		switch (*(buffer + 1)) {
 			case OP_DATA:
-				if (block_id++ == 0 && buffer_allocd == 0) {
+				if (block_id++ == 0 && optack_received == 0) {
 					// the server ignored the options and sent the data -> continue with the default block size
 					client->opts->block_size = DEFAULT_BLOCK_SIZE;
 				}
@@ -142,14 +140,12 @@ int conn_recv(client_t client) {
 				perr(TAG_ERROR_PACKET, buffer + 4);
 				goto error;
 			case OP_OPTACK:
-				client_apply_negotiated_opts(client, buffer + 2);
-				buffer = malloc(client->opts->block_size);
-				buffer_alt = malloc(client->opts->block_size);
-				if (buffer == NULL || buffer_alt == NULL) {
-					perror(TAG_ALLOC_ERROR);
+				if (client_apply_negotiated_opts(client, buffer + 2) != EXIT_SUCCESS) {
 					goto error;
 				}
-				buffer_allocd = 1;
+				buffer = client->block_buffer;
+				buffer_alt = client->block_buffer_alt;
+				optack_received = 1;
 				conn_send_ack(client, "\0");
 				recvd = (long)client->opts->block_size + 4;
 				continue;
@@ -216,10 +212,6 @@ error:
 	if (target_file != NULL) {
 		fclose(target_file);
 	}
-	if (buffer_allocd) {
-		free(buffer);
-		free(buffer_alt);
-	}
 	return EXIT_FAILURE;
 }
 
@@ -250,7 +242,9 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 			perr(TAG_ERROR_PACKET, buffer + 4);
 			return EXIT_FAILURE;
 		case OP_OPTACK:
-			client_apply_negotiated_opts(client, buffer + 2);
+			if (client_apply_negotiated_opts(client, buffer + 2) != EXIT_SUCCESS) {
+				return EXIT_FAILURE;
+			}
 			break;
 		default:
 			perr(TAG_CONN, "Packet with invalid opcode received");
@@ -269,7 +263,7 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
 int conn_send_block(client_t client, char *block, size_t block_size, size_t block_id) {
-	char *message = calloc(block_size + 4, sizeof(char));
+	char *message = client->block_buffer;
 
 	message[0] = 0;
 	message[1] = OP_DATA;
@@ -281,7 +275,6 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 	socklen_t addr_size = sizeof(client->tid_addr);
 	sendto(client->sock, message, block_size + 4, 0, (struct sockaddr *)&client->tid_addr, addr_size);
 
-	free(message);
 	return EXIT_SUCCESS;
 }
 

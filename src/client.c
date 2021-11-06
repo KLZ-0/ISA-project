@@ -8,6 +8,10 @@
 #include "connection.h"
 #include "util.h"
 
+// default buffer for blocks in send/receive, can be changed
+char static_block_buf[BUFSIZ];
+char static_block_buf_alt[BUFSIZ];
+
 /**
  * Free the memory allocated by the TFTPv2 client
  * @param client initialized client or NULL
@@ -15,6 +19,11 @@
 void client_free(client_t *client) {
 	if (client == NULL || *client == NULL) {
 		return;
+	}
+
+	if ((*client)->block_buffer_allocd) {
+		free((*client)->block_buffer);
+		free((*client)->block_buffer_alt);
 	}
 
 	close((*client)->sock);
@@ -35,6 +44,9 @@ client_t client_init(options_t *opts) {
 		perror("CLIENT INIT ALLOC ERROR");
 		return NULL;
 	}
+
+	client->block_buffer = static_block_buf;
+	client->block_buffer_alt = static_block_buf_alt;
 
 	client->opts = opts;
 
@@ -116,8 +128,9 @@ int client_run(client_t client) {
  * Apply the negotiated options
  * @param client initialized client
  * @param data packet data
+ * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-void client_apply_negotiated_opts(client_t client, char *data) {
+int client_apply_negotiated_opts(client_t client, char *data) {
 	char *d_ptr = data;
 	int got_blksize_response = 0;
 	while (*d_ptr != 0) {
@@ -148,4 +161,29 @@ void client_apply_negotiated_opts(client_t client, char *data) {
 	if (client->opts->block_size != DEFAULT_BLOCK_SIZE && !got_blksize_response) {
 		client->opts->block_size = DEFAULT_BLOCK_SIZE;
 	}
+
+	// allocate a buffer if the desired one should be bigger as the default
+	size_t desired_size = (client->opts->block_size + 4) * sizeof(char);
+	if (desired_size > BUFSIZ) {
+		if (client->block_buffer_allocd) {
+			client->block_buffer = realloc(client->block_buffer, desired_size);
+			client->block_buffer_alt = realloc(client->block_buffer_alt, desired_size);
+		} else {
+			client->block_buffer = malloc(desired_size);
+			client->block_buffer_alt = malloc(desired_size);
+			client->block_buffer_allocd = 1;
+		}
+
+		if (client->block_buffer == NULL || client->block_buffer_alt == NULL) {
+			perror(TAG_ALLOC_ERROR);
+			return EXIT_FAILURE;
+		}
+	}
+
+	// clear the buffers but make the alternative different to not distract the client with the same content
+	// and also because valgrind likes to complain about uninitialized values
+	memset(client->block_buffer, 0, desired_size);
+	memset(client->block_buffer_alt, 1, desired_size);
+
+	return EXIT_SUCCESS;
 }
