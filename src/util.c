@@ -184,7 +184,7 @@ void get_time(char *buffer) {
 
 	// format string generation
 	struct tm *timestruct = localtime(&now.tv_sec);
-	strftime(format_buffer, BUFF_SIZE, "%F %T.%%li", timestruct);
+	strftime(format_buffer, BUFF_SIZE, "%F %T.%%03li", timestruct);
 
 	// add the milliseconds
 	sprintf(buffer, format_buffer, now.tv_usec / 1000);
