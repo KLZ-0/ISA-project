@@ -145,6 +145,10 @@ int conn_recv(client_t client) {
 				client_apply_negotiated_opts(client, buffer + 2);
 				buffer = malloc(client->opts->block_size);
 				buffer_alt = malloc(client->opts->block_size);
+				if (buffer == NULL || buffer_alt == NULL) {
+					perror(TAG_ALLOC_ERROR);
+					goto error;
+				}
 				buffer_allocd = 1;
 				conn_send_ack(client, "\0");
 				recvd = (long)client->opts->block_size + 4;

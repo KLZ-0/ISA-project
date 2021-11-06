@@ -8,6 +8,9 @@
 #include <sys/time.h>
 #include <time.h>
 
+// general purpose buffer
+char static_buf[BUFSIZ];
+
 /**
  * Convert data from netascii to unix format
  * @param data input data to be modified
@@ -23,7 +26,18 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	char tmplastchar = 0;
 	static char lastchar = 0;
 
-	char *buffer = malloc(data_size);
+	char *buffer = static_buf;
+	int buffer_allocd = 0;
+
+	if (data_size > BUFSIZ) {
+		buffer = malloc(data_size);
+		if (buffer == NULL) {
+			// return the original data unchnged but inform the user
+			perror("ALLOCATION WARNING");
+			return data_size;
+		}
+		buffer_allocd = 1;
+	}
 
 	char *d_ptr = buffer;
 	size_t newsize = 0;
@@ -49,7 +63,10 @@ size_t netascii_to_unix(char *data, size_t data_size) {
 	}
 
 	memcpy(data, buffer, newsize + 1);
-	free(buffer);
+
+	if (buffer_allocd) {
+		free(buffer);
+	}
 
 	lastchar = tmplastchar;
 	return newsize;

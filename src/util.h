@@ -14,6 +14,7 @@
 #define TAG_CONN_INIT "CONNECTION INIT ERROR"
 #define TAG_CONN "CONNECTION ERROR"
 #define TAG_ERROR_PACKET "RECEIVED ERROR PACKET"
+#define TAG_ALLOC_ERROR "ALLOCATION ERROR"
 
 size_t netascii_to_unix(char *data, size_t data_size);
 size_t file_to_netascii(FILE *file, char *block, size_t block_size, size_t *real_total);
