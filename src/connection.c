@@ -257,12 +257,11 @@ int conn_send_wait_for_ack(client_t client, uint16_t block_id) {
 /**
  * Send a block to the server
  * @param client initialized client
- * @param block data block to be send
- * @param block_size size of the data block
+ * @param block_valid_bytes number of valid bytes in the buffer
  * @param block_id block number with 1 being the first data block
  * @return EXIT_SUCCESS on success or EXIT_FAILURE on error
  */
-int conn_send_block(client_t client, char *block, size_t block_size, size_t block_id) {
+int conn_send_block(client_t client, size_t block_valid_bytes, size_t block_id) {
 	char *message = client->block_buffer;
 
 	message[0] = 0;
@@ -270,10 +269,8 @@ int conn_send_block(client_t client, char *block, size_t block_size, size_t bloc
 	message[2] = (char)((block_id & 0xFF00) >> 8);
 	message[3] = (char)(block_id & 0xFF);
 
-	memcpy(message + 4, block, block_size);
-
 	socklen_t addr_size = sizeof(client->tid_addr);
-	sendto(client->sock, message, block_size + 4, 0, (struct sockaddr *)&client->tid_addr, addr_size);
+	sendto(client->sock, message, block_valid_bytes + 4, 0, (struct sockaddr *)&client->tid_addr, addr_size);
 
 	return EXIT_SUCCESS;
 }
@@ -301,16 +298,16 @@ int conn_send(client_t client) {
 	}
 
 	// send content in blocks
-	char *block = calloc(client->opts->block_size, sizeof(char));
-	size_t block_bytes;
+	char *block = client->block_buffer + 4;
+	size_t block_valid_bytes;
 	size_t sent_total = 0;
 	for (size_t block_id = 1; !feof(source_file); block_id++) {
 		// copy the block into the buffer
 		if (client->opts->mode[0] == 'o') {
-			block_bytes = fread(block, sizeof(char), client->opts->block_size, source_file);
-			sent_total += block_bytes;
+			block_valid_bytes = fread(block, sizeof(char), client->opts->block_size, source_file);
+			sent_total += block_valid_bytes;
 		} else if (client->opts->mode[0] == 'n') {
-			block_bytes = file_to_netascii(source_file, block, client->opts->block_size, &sent_total);
+			block_valid_bytes = file_to_netascii(source_file, block, client->opts->block_size, &sent_total);
 		}
 
 		// exit on error
@@ -331,7 +328,7 @@ int conn_send(client_t client) {
 		}
 
 		// send the block
-		conn_send_block(client, block, block_bytes, block_id);
+		conn_send_block(client, block_valid_bytes, block_id);
 
 		// wait for ACK
 		if ((response = conn_send_wait_for_ack(client, block_id)) != EXIT_SUCCESS) {

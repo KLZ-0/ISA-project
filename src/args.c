@@ -130,7 +130,5 @@ int parse_options(int argc, char *argv[], options_t *opts) {
 		fclose(file);
 	}
 
-	// TODO: limit block_size by the lowest MTU of all the interfaces
-
 	return EXIT_SUCCESS;
 }
