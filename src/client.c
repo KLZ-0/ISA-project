@@ -47,6 +47,7 @@ client_t client_init(options_t *opts) {
 
 	client->block_buffer = static_block_buf;
 	client->block_buffer_alt = static_block_buf_alt;
+	client->block_buffer_size = BUFSIZ;
 
 	client->opts = opts;
 
@@ -164,17 +165,22 @@ int client_apply_negotiated_opts(client_t client, char *data) {
 
 	// allocate a buffer if the desired one should be bigger as the default
 	size_t desired_size = (client->opts->block_size + 4) * sizeof(char);
-	if (desired_size > BUFSIZ) {
+	if (desired_size > client->block_buffer_size) {
 		if (client->block_buffer_allocd) {
 			client->block_buffer = realloc(client->block_buffer, desired_size);
 			client->block_buffer_alt = realloc(client->block_buffer_alt, desired_size);
+			client->block_buffer_size = desired_size;
 		} else {
 			client->block_buffer = malloc(desired_size);
 			client->block_buffer_alt = malloc(desired_size);
+			client->block_buffer_size = desired_size;
 			client->block_buffer_allocd = 1;
 		}
 
 		if (client->block_buffer == NULL || client->block_buffer_alt == NULL) {
+			client->block_buffer = static_block_buf;
+			client->block_buffer_alt = static_block_buf_alt;
+			client->block_buffer_size = BUFSIZ;
 			perror(TAG_ALLOC_ERROR);
 			return EXIT_FAILURE;
 		}

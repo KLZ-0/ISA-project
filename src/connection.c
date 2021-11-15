@@ -122,7 +122,7 @@ int conn_recv(client_t client) {
 	do {
 		// receive packet
 		socklen_t addr_size = sizeof(client->tid_addr);
-		recvd = recvfrom(client->sock, buffer, client->opts->block_size + 4, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
+		recvd = recvfrom(client->sock, buffer, client->block_buffer_size, 0, (struct sockaddr *)&client->tid_addr, &addr_size);
 		if (recvd == -1) {
 			perror("Server cannot be reached");
 			goto error;

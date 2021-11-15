@@ -28,8 +28,9 @@ typedef struct TFTPClient {
 	struct sockaddr_storage tid_addr; ///< Server address with the server's chosen TID port (acquired after first received packet)
 	options_t *opts;                  ///< transfer options
 	char *block_buffer;               ///< Buffer used for storing data blocks
-	char *block_buffer_alt;
-	int block_buffer_allocd; ///< Whether the block buffer is allocated
+	char *block_buffer_alt;           ///< Alternate buffer used for storing data blocks (used to differentiate between received packets)
+	int block_buffer_size;            ///< Size of the block buffers
+	int block_buffer_allocd;          ///< Whether the block buffer is allocated
 } * client_t;
 
 void client_free(client_t *client);
